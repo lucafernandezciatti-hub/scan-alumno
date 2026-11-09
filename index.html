@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scan · App del alumno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<!--
+  SCAN · APP DEL ALUMNO — prototipo v0.1
+  Diseño Interactivo (UTDT) · escenario "Enseñanza Scan 360" · PRD: https://claude.ai/artifact/JMZs6eA4rMs8cpASa4mdSJ
+
+  Idea: tutor de voz para alumnos de primaria. Saluda, pregunta cómo estás, te lleva por los bloques
+  del día que eligió el sistema y cambia de método cuando no entendés. Nunca muestra por qué decide.
+
+  Cómo se usa
+    Mouse/táctil: caritas, botones grandes, barra inferior.
+    Voz: mantener apretado el micrófono (o la barra espaciadora) y hablar. Si el navegador no deja usar
+         el micrófono (por ejemplo, dentro de claude.ai), todo se puede hacer con botones.
+    Teclado: 1–4 ánimo · 1–3 responder · N no entiendo · R repetir · F nota de prueba · Shift+R reiniciar alumno.
+
+  Cambios por versión
+    v0.1 (2/11/2026): check-in con voz, respiración, plan del día, bloque de Matemática (fracciones)
+                      con "No entiendo" y 3 métodos, indicador Scan, vista de pulsera, notas de prueba.
+    v0.4.2 (9/11/2026): el Agent ID de Miseño viene cargado; para el modo real alcanza con elegir "Real".
+    v0.4.1 (9/11/2026): el tutor de IA se llama Miseño (guion del modo real).
+    v0.4 (9/11/2026): modo real con IA de voz (agente de ElevenLabs que habla, escucha y mueve la app con
+                      herramientas, siguiendo el guion de cada pantalla) y modo testing con la voz robótica.
+                      El modo se cambia en el panel de notas (tecla F). Si el modo real falla, vuelve a testing.
+    v0.3 (9/11/2026): recorrido guiado y secuencial: Lección → Mi camino → Mi perfil → Agenda → Recreo.
+                      Cada etapa se desbloquea al terminar la anterior; cada pantalla muestra primero
+                      "lo que cambió". Avisos se reemplaza por Agenda; nuevo chat del recreo con amigos.
+                      Ciencias pasa a después del recreo.
+    v0.2 (3/11/2026): bloques de Lengua (cuento "La arquera") y Ciencias (plantas, cierre con grupo de huerta);
+                      motor de bloques con opciones de texto y voz por palabras clave; Mi camino (¿Por qué?
+                      genérico, Música en pausa), Mi perfil Scan y Avisos; teclas 1–3 para responder; fin del día.
+
+  Ideas pendientes (ver PRD): límite emocional (v0.3);
+  proyecto grupal y modos de la pulsera (después).
+-->
+<style>
+:root{
+  /* Mundo Scan: superficie cálida y amable, un solo azul que "mira". Vidrio translúcido sobre crema.
+     Layout: escenario del tutor a la izquierda, pulsera y lectura Scan a la derecha, navegación abajo. */
+  --bg:#F4EFE6;
+  --bg-deep:#EAE2D4;
+  --glass:rgba(255,255,255,.62);
+  --glass-line:rgba(255,255,255,.9);
+  --ink:#1F2733;
+  --ink-soft:#5E6878;
+  --scan:#2F6BE0;
+  --scan-soft:#DCE7FB;
+  --good:#2E9E6B;
+  --warn:#D9822B;
+  --radius:22px;
+  --font-display:"Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif;
+  --font-body:"Atkinson Hyperlegible", "Verdana", system-ui, sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:
+    radial-gradient(1200px 700px at 85% -10%, #FFFFFF 0%, rgba(255,255,255,0) 60%),
+    radial-gradient(900px 600px at -10% 110%, var(--bg-deep) 0%, rgba(234,226,212,0) 70%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:18px;
+  line-height:1.45;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--scan);outline-offset:3px}
+
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;max-width:1280px;margin:0 auto}
+
+/* Barra superior */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 28px 6px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:600;font-size:24px;letter-spacing:.5px}
+.brand-mark{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0 18%,var(--scan) 60%,#1F4FB0 100%);box-shadow:0 0 0 4px var(--scan-soft)}
+.top-right{display:flex;align-items:center;gap:14px;color:var(--ink-soft);font-size:16px}
+.who{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--glass-line);border-radius:999px;padding:6px 14px 6px 6px;color:var(--ink)}
+.avatar{width:34px;height:34px;border-radius:50%;background:#F3C98B;display:grid;place-items:center;font-family:var(--font-display);font-weight:600}
+.toggle{border:1px solid var(--glass-line);background:var(--glass);border-radius:999px;padding:8px 14px;font-size:15px}
+.toggle[aria-pressed="false"]{color:var(--ink-soft);text-decoration:line-through}
+
+/* Cuerpo */
+.main{display:grid;grid-template-columns:1fr 300px;gap:24px;padding:14px 28px;min-height:0}
+.stage{position:relative;background:var(--glass);border:1px solid var(--glass-line);border-radius:28px;gap:0;
+  box-shadow:0 20px 60px -30px rgba(31,39,51,.35);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  display:flex;flex-direction:column;align-items:center;padding:22px 28px 20px;min-height:0;overflow:auto}
+.aside{display:flex;flex-direction:column;gap:18px;min-height:0}
+
+/* Tutor */
+.tutor{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.orb-wrap{position:relative;width:120px;height:120px;display:grid;place-items:center;flex:none}
+.orb{width:96px;height:96px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#FFFFFF 0 12%,#BFD3FA 28%,var(--scan) 64%,#1D47A3 100%);
+  box-shadow:0 0 0 10px rgba(47,107,224,.10),0 18px 40px -12px rgba(47,107,224,.55);
+  animation:idle 5s ease-in-out infinite;transition:transform 4s ease-in-out}
+.orb-wrap.speaking .orb{animation:talk .9s ease-in-out infinite}
+.orb-wrap.listening::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid var(--scan);animation:ring 1.2s ease-out infinite}
+.orb-wrap.breath .orb{animation:none}
+@keyframes idle{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+@keyframes talk{0%,100%{transform:scale(1);box-shadow:0 0 0 10px rgba(47,107,224,.10),0 18px 40px -12px rgba(47,107,224,.55)}50%{transform:scale(1.06);box-shadow:0 0 0 18px rgba(47,107,224,.14),0 18px 40px -12px rgba(47,107,224,.7)}}
+@keyframes ring{from{transform:scale(.85);opacity:.9}to{transform:scale(1.15);opacity:0}}
+.caption{font-family:var(--font-display);font-size:28px;font-weight:500;line-height:1.3;text-align:center;max-width:30ch;text-wrap:balance;min-height:1.3em}
+.caption small{display:block;font-family:var(--font-body);font-size:17px;font-weight:400;color:var(--ink-soft);margin-top:6px}
+.repeat{border:none;background:none;color:var(--scan);font-size:16px;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px}
+.repeat:hover{background:var(--scan-soft)}
+
+.stage.compact .tutor{flex-direction:row;justify-content:center;gap:18px;text-align:left}
+.stage.compact .orb-wrap{width:72px;height:72px}
+.stage.compact .orb{width:56px;height:56px;box-shadow:0 0 0 6px rgba(47,107,224,.10),0 10px 24px -10px rgba(47,107,224,.55)}
+.stage.compact .caption{font-size:22px;text-align:left;max-width:40ch}
+.stage.compact .content{margin-top:12px}
+.content{width:100%;max-width:720px;display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:14px;flex:1}
+
+/* Botones grandes */
+.choices{display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+.big{min-width:120px;min-height:72px;padding:12px 26px;border-radius:20px;border:2px solid transparent;background:#fff;
+  font-family:var(--font-display);font-size:26px;font-weight:500;box-shadow:0 6px 0 #D9D2C4;transition:transform .08s, box-shadow .08s}
+.big:hover{border-color:var(--scan-soft)}
+.big:active{transform:translateY(4px);box-shadow:0 2px 0 #D9D2C4}
+.big.primary{background:var(--scan);color:#fff;box-shadow:0 6px 0 #1D47A3}
+.big.primary:active{box-shadow:0 2px 0 #1D47A3}
+.big.ghost{background:transparent;box-shadow:none;border-color:#D9D2C4;font-size:20px;min-height:60px}
+.big.right{background:var(--good);color:#fff;box-shadow:0 6px 0 #1F7550}
+.big.wrong{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+.mood{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:16px;width:100%}
+.mood button{border:2px solid transparent;background:#fff;border-radius:22px;padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 6px 0 #D9D2C4;font-size:19px}
+.mood button:hover{border-color:var(--scan-soft)}
+.mood svg{width:60px;height:60px}
+.key{font-size:13px;color:var(--ink-soft)}
+
+/* Plan del día */
+.plan{width:100%;display:flex;flex-direction:column;gap:12px}
+.plan-item{display:grid;grid-template-columns:56px 1fr auto;align-items:center;gap:16px;background:#fff;border-radius:20px;padding:14px 18px}
+.plan-item .ic{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-family:var(--font-display);font-size:24px;font-weight:600}
+.plan-item h3{margin:0;font-family:var(--font-display);font-weight:500;font-size:24px}
+.plan-item p{margin:2px 0 0;color:var(--ink-soft);font-size:16px}
+.plan-item .mins{font-family:var(--font-display);font-size:22px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.plan-item.now{outline:3px solid var(--scan)}
+.plan-item.done{opacity:.55}
+.plan-item.done h3{text-decoration:line-through}
+.plan-item .lock{font-size:14px;color:var(--ink-soft)}
+
+/* Bloque */
+.block-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:6px 14px;font-size:15px}
+.progress{flex:1;min-width:140px;height:10px;border-radius:99px;background:#E4DDCF;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--scan);border-radius:99px;transition:width .5s}
+.problem{width:100%;background:#fff;border-radius:24px;padding:22px 26px;font-size:24px;line-height:1.4;text-align:center}
+.problem .frac{font-family:var(--font-display);font-weight:600;color:var(--scan);white-space:nowrap}
+.method-tag{font-size:14px;color:var(--ink-soft);letter-spacing:.3px}
+.visual{width:100%;background:#fff;border-radius:24px;padding:18px}
+.visual svg{width:100%;height:auto;display:block}
+.actions{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;align-items:center;margin-top:auto;padding-top:8px}
+.noent{background:#FFF4E5;border:2px solid #F3C98B;color:#7A4A12;border-radius:20px;padding:12px 22px;font-family:var(--font-display);font-size:22px;font-weight:500;display:inline-flex;align-items:center;gap:10px}
+.noent:hover{background:#FFEBD0}
+
+.mic{width:84px;height:84px;border-radius:50%;border:none;background:var(--scan);color:#fff;display:grid;place-items:center;box-shadow:0 6px 0 #1D47A3;touch-action:none}
+.mic svg{width:36px;height:36px}
+.mic.on{background:#D64545;box-shadow:0 6px 0 #9C2B2B}
+.mic[disabled]{background:#C9C2B5;box-shadow:none;cursor:not-allowed}
+.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px;color:var(--ink-soft);max-width:180px;text-align:center}
+.heard{font-size:15px;color:var(--ink-soft);min-height:1.4em}
+
+.banner{position:absolute;left:50%;top:16px;transform:translateX(-50%);background:#fff;border-radius:18px;padding:12px 16px 12px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 14px 40px -18px rgba(31,39,51,.45);font-size:17px;z-index:5;max-width:90%}
+.banner button{border:none;background:var(--scan);color:#fff;border-radius:12px;padding:8px 14px}
+
+.celebrate{font-family:var(--font-display);font-size:64px;color:var(--good)}
+.note-card{background:#fff;border-radius:22px;padding:22px 26px;max-width:520px;text-align:center;color:var(--ink-soft)}
+.note-card strong{display:block;font-family:var(--font-display);font-weight:500;font-size:24px;color:var(--ink);margin-bottom:6px}
+
+/* Pulsera */
+.panel{background:var(--glass);border:1px solid var(--glass-line);border-radius:var(--radius);padding:16px 18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.panel h2{margin:0 0 10px;font-family:var(--font-display);font-weight:500;font-size:17px;color:var(--ink-soft);letter-spacing:.3px}
+.band{position:relative;height:150px;display:grid;place-items:center}
+.band::before{content:"";position:absolute;left:-18px;right:-18px;top:50%;height:58px;transform:translateY(-50%);border-radius:30px;background:linear-gradient(180deg,#3A4252,#232A35)}
+.band-face{position:relative;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#0F1A2E,#05090F);border:6px solid #8E96A3;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#EAF1FF;padding:12px;transition:transform .2s}
+.band-face.buzz{animation:buzz .5s}
+@keyframes buzz{20%,60%{transform:translateX(-3px) rotate(-2deg)}40%,80%{transform:translateX(3px) rotate(2deg)}}
+.band-main{font-family:var(--font-display);font-size:21px;font-weight:500;line-height:1.1}
+.band-sub{font-size:12px;color:#9EB4DE;margin-top:4px;font-variant-numeric:tabular-nums}
+.band-mode{position:absolute;bottom:16px;display:flex;align-items:center;gap:4px;font-size:10px;color:#7FA2E8;letter-spacing:.6px;text-transform:uppercase}
+.band-mode i{width:6px;height:6px;border-radius:50%;background:#5B8CF0;box-shadow:0 0 6px #5B8CF0}
+
+.reading{display:flex;flex-direction:column;gap:10px}
+.meter{display:grid;grid-template-columns:62px 1fr;align-items:center;gap:10px;font-size:15px}
+.dots{display:flex;gap:6px}
+.dots b{width:100%;height:10px;border-radius:5px;background:#E1DACC;transition:background .4s}
+.dots b.on{background:var(--scan)}
+.dots.low b.on{background:var(--warn)}
+.reading-note{font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:6px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--scan);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+
+.mini-plan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.mini-plan li{display:flex;justify-content:space-between;gap:8px}
+.mini-plan li.now{color:var(--scan);font-weight:700}
+.mini-plan li.done{color:var(--ink-soft);text-decoration:line-through}
+
+/* Navegación */
+.nav{display:flex;justify-content:center;gap:10px;padding:8px 28px 20px}
+.nav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:110px;padding:8px 14px;border:none;background:transparent;border-radius:16px;color:var(--ink-soft);font-size:15px}
+.nav button svg{width:28px;height:28px}
+.nav button[aria-current="page"]{background:var(--glass);color:var(--scan);font-weight:700}
+.badge{position:absolute;top:4px;right:30px;min-width:18px;height:18px;border-radius:9px;background:#D64545;color:#fff;font-size:11px;display:grid;place-items:center;padding:0 5px}
+
+/* Notas de prueba */
+.fb-btn{position:fixed;right:18px;bottom:18px;width:52px;height:52px;border-radius:50%;border:none;background:var(--ink);color:#fff;display:grid;place-items:center;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);z-index:20}
+.fb-btn svg{width:24px;height:24px}
+.fb{position:fixed;right:18px;bottom:82px;width:340px;max-width:calc(100% - 36px);background:#fff;border-radius:20px;padding:16px;box-shadow:0 20px 60px -20px rgba(0,0,0,.45);z-index:20;display:none;flex-direction:column;gap:10px;font-size:15px}
+.fb.open{display:flex}
+.fb h3{margin:0;font-family:var(--font-display);font-weight:500;font-size:19px}
+.fb textarea{width:100%;min-height:90px;border:1px solid #D9D2C4;border-radius:12px;padding:10px;font:inherit;resize:vertical}
+.fb .row{display:flex;gap:8px;flex-wrap:wrap}
+.fb .row button{border:1px solid #D9D2C4;background:#fff;border-radius:10px;padding:8px 12px}
+.fb .row button.main{background:var(--ink);color:#fff;border-color:var(--ink)}
+.fb .meta{color:var(--ink-soft);font-size:13px}
+
+.start{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;flex:1;text-align:center}
+.start p{color:var(--ink-soft);max-width:44ch;margin:0}
+
+
+/* v0.2 */
+.choices.col{flex-direction:column;align-items:stretch;width:100%;max-width:560px}
+.big.txt{font-size:21px;text-align:left;display:flex;align-items:center;gap:14px;min-height:64px}
+.opt-n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--scan-soft);color:var(--scan);font-size:15px;display:grid;place-items:center}
+.big:not(.txt) .opt-n{display:none}
+.big.right .opt-n{background:rgba(255,255,255,.3);color:#fff}
+.story{width:100%;background:#fff;border-radius:24px;padding:20px 26px}
+.story h3{margin:0 0 8px;font-family:var(--font-display);font-weight:500;font-size:26px}
+.story p{margin:0 0 10px;font-size:21px;line-height:1.55;padding:4px 8px;border-radius:10px;transition:background .3s}
+.story p.leyendo{background:var(--scan-soft)}
+.note-card.group .faces{display:flex;justify-content:center;gap:8px;margin-top:12px}
+.faces span{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-display);font-weight:600;color:var(--ink)}
+.ramas{width:100%;display:flex;flex-direction:column;gap:10px}
+.rama{width:100%;display:grid;grid-template-columns:150px 1fr;align-items:center;gap:16px;background:#fff;border:2px solid transparent;border-radius:20px;padding:12px 18px;text-align:left}
+.rama:hover{border-color:var(--scan-soft)}
+.rama.sel{border-color:var(--scan)}
+.rama-name{display:flex;flex-direction:column;gap:4px;font-family:var(--font-display);font-size:21px;font-weight:500}
+.state{align-self:flex-start;font-family:var(--font-body);font-size:13px;font-weight:700;padding:2px 10px;border-radius:99px;background:#E3F2EA;color:#1F7550}
+.state.off{background:#ECE7DE;color:var(--ink-soft)}
+.track{display:flex;align-items:flex-start;min-width:0}
+.node{flex:none;width:92px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.node i{width:20px;height:20px;border-radius:50%;border:3px solid #C9D8F6;background:#fff}
+.node.hecho i{background:var(--scan);border-color:var(--scan)}
+.node.actual i{background:#fff;border-color:var(--scan);box-shadow:0 0 0 5px var(--scan-soft)}
+.node em{font-style:normal;font-size:13px;color:var(--ink-soft);line-height:1.2}
+.node.actual em{color:var(--ink);font-weight:700}
+.link{flex:1;min-width:10px;height:3px;background:#C9D8F6;margin-top:9px}
+.rama.pausa{background:#F6F3EE}
+.rama.pausa .node i{border-color:#D4CEC3}
+.rama.pausa .node.hecho i,.rama.pausa .node.actual i{background:#BEB7AB;border-color:#BEB7AB;box-shadow:none}
+.rama.pausa .link{background:repeating-linear-gradient(90deg,#D4CEC3 0 6px,transparent 6px 12px)}
+.detail{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;border-radius:20px;padding:16px 20px}
+.detail.muted{color:var(--ink-soft);justify-content:center}
+.detail strong{font-family:var(--font-display);font-weight:500;font-size:21px}
+.detail p{margin:4px 0 0}
+.detail .porque{color:var(--scan);font-style:italic}
+.why{flex:none;border:2px solid var(--scan);background:#fff;color:var(--scan);border-radius:16px;padding:10px 18px;font-family:var(--font-display);font-size:20px}
+.why:hover{background:var(--scan-soft)}
+.perfil{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pcard{background:#fff;border-radius:20px;padding:16px 18px}
+.pcard.wide{grid-row:span 2}
+.pcard h3{margin:0 0 10px;font-family:var(--font-display);font-weight:500;font-size:19px}
+.pcard p{margin:0 0 8px;color:var(--ink-soft);font-size:16px}
+.pcard ul{margin:0;padding-left:20px}
+.pcard svg{width:100%;height:auto}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{display:flex;flex-direction:column;background:var(--bg);border-radius:14px;padding:8px 12px;font-weight:700}
+.tag small{font-weight:400;font-size:12px;color:var(--ink-soft)}
+.tag.strong{background:var(--scan-soft);color:#1D47A3}
+.week{display:flex;gap:10px}
+.day{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft)}
+.day .dots{flex-direction:column-reverse;gap:3px;width:22px}
+.day .dots b{height:8px}
+.pfoot{grid-column:1/-1;margin:0;font-size:14px;color:var(--ink-soft);display:flex;align-items:center;gap:8px}
+.avisos{width:100%;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.aviso{display:flex;flex-direction:column;gap:6px;background:#fff;border:2px solid transparent;border-radius:18px;padding:14px 18px;text-align:left}
+.aviso:hover{border-color:var(--scan-soft)}
+.aviso-head{display:flex;align-items:center;gap:12px}
+.aviso-head strong{flex:1;font-family:var(--font-display);font-weight:500;font-size:20px}
+.aviso .dot{width:10px;height:10px;border-radius:50%;background:transparent}
+.aviso.nuevo .dot{background:#D64545}
+.aviso .fecha{color:var(--ink-soft);font-size:14px}
+.aviso-body{padding-left:22px;font-size:18px}
+.big.small{align-self:flex-start;min-height:48px;font-size:18px;padding:8px 18px;margin-left:22px}
+.badge[hidden]{display:none}
+@media (max-width:900px){
+  .rama{grid-template-columns:1fr}
+  .track{overflow-x:auto}
+  .perfil{grid-template-columns:1fr}
+  .pcard.wide{grid-row:auto}
+  .detail{flex-direction:column;align-items:flex-start}
+}
+
+/* v0.3: recorrido guiado */
+.steps{gap:6px;align-items:center}
+.steps button{flex-direction:row;gap:8px;min-width:0;padding:10px 16px;font-size:16px;position:relative}
+.steps button:not(:last-child)::after{content:"";position:absolute;right:-8px;top:50%;width:10px;height:2px;background:#D9D2C4}
+.steps .num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--scan-soft);color:var(--scan);font-weight:700;font-size:14px}
+.steps .lk{display:none;width:18px;height:18px}
+.steps button[aria-current="step"]{background:var(--glass);color:var(--scan);font-weight:700;box-shadow:0 0 0 2px var(--scan)}
+.steps button[aria-current="step"] .num{background:var(--scan);color:#fff}
+.steps button.seen .num{background:var(--scan);color:#fff}
+.steps button.locked{color:#B5AEA2;cursor:not-allowed}
+.steps button.locked .num{display:none}
+.steps button.locked .lk{display:block}
+.actions.sticky{position:sticky;bottom:-20px;width:100%;justify-content:center;background:linear-gradient(180deg,rgba(250,247,241,0),rgba(250,247,241,.95) 40%);padding:18px 0 4px;margin-top:4px}
+.updates{width:100%;background:#fff;border-radius:20px;padding:14px 18px;border-left:6px solid var(--scan)}
+.updates h3{margin:0 0 6px;font-family:var(--font-display);font-weight:500;font-size:20px;color:var(--scan)}
+.updates ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.updates .was{color:var(--ink-soft)}
+.perfil .wide2{grid-column:1/-1}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.state.new{background:var(--scan);color:#fff}
+.state.chg{background:#FFF0DA;color:#8A520F}
+.is-new{box-shadow:0 0 0 2px var(--scan)}
+li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
+.day.today{color:var(--scan);font-weight:700}
+.plan-break{align-self:center;font-size:15px;color:var(--ink-soft);background:var(--bg-deep);border-radius:99px;padding:4px 14px}
+.agenda{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column}
+.agenda li{display:grid;grid-template-columns:60px 24px 1fr auto;align-items:center;gap:12px;padding:10px 14px;border-radius:16px}
+.agenda .hora{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:16px}
+.agenda .marca{width:14px;height:14px;border-radius:50%;border:3px solid #C9D8F6;background:#fff;justify-self:center}
+.agenda .que{display:flex;flex-direction:column}
+.agenda .que strong{font-family:var(--font-display);font-weight:500;font-size:20px}
+.agenda .que small{color:var(--ink-soft);font-size:15px}
+.agenda .que small.was{color:#8A520F}
+.agenda li.done{opacity:.55}
+.agenda li.done .marca{background:var(--scan);border-color:var(--scan)}
+.agenda li.now{background:#fff;box-shadow:0 0 0 2px var(--scan)}
+.agenda li.now .marca{border-color:var(--scan);box-shadow:0 0 0 5px var(--scan-soft)}
+.agenda li.changed{background:#FFF8EE}
+.agenda li.changed .marca{border-color:#E3A33A}
+.suggest{width:100%;display:flex;align-items:flex-start;gap:12px;background:var(--scan-soft);border-radius:18px;padding:12px 16px;font-size:16px}
+.suggest .pulse{margin-top:7px;flex:none}
+.suggest strong{display:block;font-family:var(--font-display);font-weight:500;font-size:18px;color:#1D47A3}
+.chat{width:100%;background:#fff;border-radius:20px;padding:12px 16px;display:flex;flex-direction:column;gap:10px;max-height:300px;overflow:auto}
+.chat-head{font-size:13px;color:var(--ink-soft);text-align:center}
+.msg{display:flex;gap:10px;align-items:flex-end;max-width:80%}
+.msg b{display:block;font-size:13px;color:var(--ink-soft)}
+.msg p{margin:2px 0 0;background:var(--bg);border-radius:16px 16px 16px 4px;padding:8px 12px;font-size:18px}
+.msg.me{align-self:flex-end}
+.msg.me p{background:var(--scan);color:#fff;border-radius:16px 16px 4px 16px}
+.msg.scan{align-self:center;max-width:none;font-size:14px;color:var(--ink-soft);display:flex;align-items:center;gap:8px;background:var(--scan-soft);border-radius:99px;padding:4px 12px}
+.who-dot{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-display);font-weight:600}
+.quick{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.qr{border:2px solid var(--scan-soft);background:#fff;border-radius:99px;padding:8px 16px;font-size:17px;color:#1D47A3}
+.qr:hover{background:var(--scan-soft)}
+.compose{width:100%;display:flex;gap:8px}
+.compose input{flex:1;border:1px solid #D9D2C4;border-radius:14px;padding:12px 14px;font:inherit;background:#fff}
+.compose input:focus-visible{outline:3px solid var(--scan);outline-offset:2px}
+.send{border:none;background:var(--ink);color:#fff;border-radius:14px;padding:0 18px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:700px){
+  .steps .lbl{display:none}
+  .steps button[aria-current="step"] .lbl{display:inline}
+  .agenda li{grid-template-columns:48px 18px 1fr}
+  .agenda li .state{display:none}
+}
+
+/* v0.4: modo de voz */
+.modo-chip{font-size:12px;font-weight:700;letter-spacing:.3px;border-radius:99px;padding:4px 10px;text-transform:uppercase}
+.modo-chip.test{background:#ECE7DE;color:var(--ink-soft)}
+.modo-chip.real{background:#E3F2EA;color:#1F7550}
+.modo-chip.warn{background:#FFF0DA;color:#8A520F}
+.mic.live{display:grid;place-items:center;cursor:default;background:var(--good);box-shadow:0 0 0 6px rgba(46,158,107,.18)}
+.fb hr{border:none;border-top:1px solid #ECE7DE;margin:4px 0;width:100%}
+.fb .modo{flex-direction:column;gap:6px}
+.fb .modo label{display:flex;gap:8px;align-items:center}
+.fb{max-height:calc(100vh - 110px);overflow:auto}
+.fb-input{border:1px solid #D9D2C4;border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;width:100%}
+@media (max-width:900px){
+  .main{grid-template-columns:1fr}
+  .aside{flex-direction:row;flex-wrap:wrap}
+  .aside .panel{flex:1;min-width:240px}
+  .mood{grid-template-columns:repeat(2,1fr)}
+  .caption{font-size:24px}
+}
+@media (max-width:480px){
+  .top,.main,.nav{padding-left:16px;padding-right:16px}
+  .nav button{min-width:0;flex:1}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Scan</div>
+    <div class="top-right">
+      <span id="clock">Martes 8 de noviembre · 09:05</span>
+      <span class="modo-chip test" id="modoChip" title="Modo de voz (cambialo en el panel de notas, tecla F)">Modo testing</span>
+      <button class="toggle" id="voiceToggle" aria-pressed="true" title="Prender o apagar la voz del tutor">Voz</button>
+      <span class="who"><span class="avatar" id="avatarInitial">J</span><span id="whoName">Joaquín</span></span>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="stage" id="stage" aria-live="polite">
+      <div class="tutor">
+        <div class="orb-wrap" id="orbWrap"><div class="orb" id="orb"></div></div>
+        <div class="caption" id="caption"></div>
+        <button class="repeat" id="repeatBtn" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>
+          Repetir
+        </button>
+      </div>
+      <div class="content" id="content"></div>
+    </section>
+
+    <aside class="aside">
+      <div class="panel">
+        <h2>Tu pulsera</h2>
+        <div class="band">
+          <div class="band-face" id="bandFace">
+            <div class="band-main" id="bandMain">Hola</div>
+            <div class="band-sub" id="bandSub">tocá para empezar</div>
+            <div class="band-mode"><i></i>Tutor</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel reading" id="readingPanel">
+        <h2>Scan te está leyendo</h2>
+        <div class="meter"><span>Foco</span><span class="dots" id="focusDots"><b></b><b></b><b></b><b></b></span></div>
+        <div class="meter"><span>Ánimo</span><span class="dots" id="moodDots"><b></b><b></b><b></b><b></b></span></div>
+        <div class="reading-note"><span class="pulse"></span><span id="readingNote">Lectura en vivo</span></div>
+      </div>
+      <div class="panel">
+        <h2>Hoy</h2>
+        <ul class="mini-plan" id="miniPlan"></ul>
+      </div>
+    </aside>
+  </main>
+
+  <nav class="nav steps" aria-label="Recorrido de hoy">
+    <button data-tab="hoy"><span class="num">1</span><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="lbl">Lección</span></button>
+    <button data-tab="camino"><span class="num">2</span><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="lbl">Mi camino</span></button>
+    <button data-tab="perfil"><span class="num">3</span><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="lbl">Mi perfil</span></button>
+    <button data-tab="agenda"><span class="num">4</span><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="lbl">Agenda</span></button>
+    <button data-tab="recreo"><span class="num">5</span><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="lbl">Recreo</span></button>
+  </nav>
+</div>
+
+<button class="fb-btn" id="fbBtn" aria-label="Nota de prueba (tecla F)" title="Nota de prueba (F)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+<div class="fb" id="fb" role="dialog" aria-label="Notas de prueba">
+  <h3>Nota de prueba</h3>
+  <div class="meta" id="fbMeta"></div>
+  <label for="fbText" class="meta">Qué pasó (lo ve solo quien observa el test)</label>
+  <textarea id="fbText" placeholder="Ej.: no encontró el botón de No entiendo"></textarea>
+  <div class="row">
+    <button class="main" id="fbSave">Guardar nota</button>
+    <button id="fbCopy">Copiar JSON</button>
+    <button id="fbClose">Cerrar</button>
+  </div>
+  <div class="meta" id="fbCount"></div>
+  <hr>
+  <h3>Modo de voz</h3>
+  <div class="row modo" role="radiogroup" aria-label="Modo de voz">
+    <label><input type="radio" name="modo" value="testing"> Testing (voz robótica, gratis)</label>
+    <label><input type="radio" name="modo" value="real"> Real (IA de ElevenLabs, gasta créditos)</label>
+  </div>
+  <label for="agentId" class="meta">Agent ID de ElevenLabs</label>
+  <input id="agentId" class="fb-input" placeholder="agent_…" autocomplete="off">
+  <div class="row"><button id="iaConectar">Conectar ahora</button></div>
+  <div class="meta" id="iaEstado"></div>
+</div>
+
+<script>
+/* ===================== PARÁMETROS ===================== */
+const PARAMETROS = {
+  NOMBRE_ALUMNO: "Joaquín",
+  INTERES_PRINCIPAL: "fútbol",
+  BLOQUES_DEL_DIA: 3,
+  DURACION_BLOQUE_MIN: 25,
+  TIEMPO_RESPIRACION_S: 30,
+  LECTURA_SCAN_CADA_S: 20,
+  FOCO_BAJO_LECTURAS: 2,
+  MAX_NO_ENTIENDO: 3,
+  VOZ_VELOCIDAD: 0.95,
+  VOZ_ACTIVA: true,
+  TEXTO_POR_QUE: "Scan eligió el mejor camino para vos según cómo aprendés."
+};
+
+/* ===================== DATOS DE EJEMPLO ===================== */
+const PLAN = [
+  { id:"mate", materia:"Matemática", corto:"Mate", tema:"Fracciones", min:PARAMETROS.DURACION_BLOQUE_MIN, color:"#DCE7FB", ink:"#2F6BE0", letra:"½" },
+  { id:"lengua", materia:"Lengua", corto:"Lengua", tema:"Cuento: La arquera", min:20, color:"#E3F2EA", ink:"#2E9E6B", letra:"A" },
+  { id:"ciencias", materia:"Ciencias", corto:"Cienc.", tema:"Las plantas", min:30, color:"#FBEBD6", ink:"#B86A1D", letra:"✿", despuesRecreo:true }
+].slice(0, PARAMETROS.BLOQUES_DEL_DIA);
+
+// Lecturas simuladas de la pulsera: [foco, ánimo] de 1 a 4. Se recorren en orden, una cada LECTURA_SCAN_CADA_S.
+const LECTURAS = [[4,3],[4,3],[3,3],[2,2],[2,2],[3,3],[4,3],[3,4],[4,4],[3,3],[2,3],[3,3]];
+
+// Cada ejercicio: opciones (texto de los botones), correcta (índice), claves (para reconocer la respuesta por voz
+// en bloques de texto), pista, dibujo (método 2) y pasos (método 3).
+const BLOQUES = {
+  mate: {
+    tipo: "num",
+    intro: {
+      titulo: "Fracciones",
+      texto: "Una fracción es una parte de algo entero. Si cortás algo en partes iguales y te quedás con algunas, eso es una fracción.",
+      dicho: `Hoy vamos con fracciones, y con ${PARAMETROS.INTERES_PRINCIPAL}. Una fracción es una parte de algo entero: si cortás algo en partes iguales y te quedás con algunas, eso es una fracción.`,
+      corto: `Hoy: fracciones, con ${PARAMETROS.INTERES_PRINCIPAL}.`
+    },
+    ejercicios: [
+      {
+        enunciado: 'Joaquín jugó <span class="frac">1/3</span> (un tercio) de un partido de 90 minutos. ¿Cuántos minutos jugó?',
+        dicho: "Joaquín jugó un tercio de un partido de 90 minutos. ¿Cuántos minutos jugó?",
+        opciones: ["30", "45", "3"], correcta: 0,
+        pista: "Un tercio es cortar en 3 partes iguales. ¿Cuánto es 90 dividido 3?",
+        dibujo: { dicho: "Mirá el partido como una barra: 90 minutos cortados en 3 pedazos iguales. Cada pedazo dura 30 minutos. Joaquín jugó un pedazo.", svg: () => barraPartido() },
+        pasos: [
+          { pregunta: "¿En cuántas partes iguales cortamos el partido?", opciones:["3", "90", "1"], correcta:0 },
+          { pregunta: "Si cortamos 90 minutos en 3 partes, ¿cuánto dura cada parte?", opciones:["30", "3", "60"], correcta:0 },
+          { pregunta: "Joaquín jugó 1 de esas partes. ¿Cuántos minutos son?", opciones:["30", "90", "1"], correcta:0 }
+        ]
+      },
+      {
+        enunciado: 'Tu equipo hizo 12 goles en el torneo. El 9 hizo <span class="frac">3/4</span> (tres cuartos) de los goles. ¿Cuántos goles hizo el 9?',
+        dicho: "Tu equipo hizo 12 goles en el torneo. El 9 hizo tres cuartos de los goles. ¿Cuántos goles hizo el 9?",
+        opciones: ["9", "3", "4"], correcta: 0,
+        pista: "Primero repartí los 12 goles en 4 grupos iguales. Después juntá 3 grupos.",
+        dibujo: { dicho: "Mirá los 12 goles repartidos en 4 grupos iguales. Cada grupo tiene 3 goles. El 9 hizo los goles de 3 grupos.", svg: () => pelotas() },
+        pasos: [
+          { pregunta: "¿En cuántos grupos iguales repartimos los 12 goles?", opciones:["4", "3", "12"], correcta:0 },
+          { pregunta: "12 goles en 4 grupos: ¿cuántos goles hay en cada grupo?", opciones:["3", "4", "8"], correcta:0 },
+          { pregunta: "El 9 hizo 3 grupos de 3 goles. ¿Cuánto es 3 + 3 + 3?", opciones:["9", "6", "12"], correcta:0 }
+        ]
+      }
+    ]
+  },
+
+  lengua: {
+    tipo: "texto",
+    intro: {
+      titulo: "La arquera",
+      cuento: [
+        "Lucía era la arquera del equipo del barrio. Antes de cada partido se ataba los cordones dos veces, porque una vez se le había salido el botín en un penal.",
+        "El sábado jugaban la final. Faltaba un minuto y el árbitro cobró penal para el otro equipo. Todos se quedaron callados.",
+        "Lucía miró la pelota, respiró hondo y se tiró a la izquierda. ¡La atajó! Sus compañeros corrieron a abrazarla y la levantaron en andas."
+      ],
+      dicho: "Te leo un cuento. Se llama La arquera. Escuchá con atención, después te hago unas preguntas.",
+      corto: "Escuchá el cuento."
+    },
+    ejercicios: [
+      {
+        enunciado: "¿Por qué Lucía se ataba los cordones dos veces?",
+        dicho: "¿Por qué Lucía se ataba los cordones dos veces?",
+        opciones: ["Porque una vez se le salió el botín en un penal", "Porque estaba lloviendo", "Porque se lo pidió el árbitro"], correcta: 0,
+        claves: [/bot[ií]n|sali[oó]|penal|zapat/, /llov|lluvia/, /[aá]rbitro|referi/],
+        pista: "Buscá en el cuento la parte de los cordones. ¿Qué le había pasado una vez?",
+        dibujo: { dicho: "Mirá el dibujo: una vez, pateando un penal, a Lucía se le salió el botín. Por eso ahora se ata los cordones dos veces.", svg: () => botinVolando() },
+        pasos: [
+          { pregunta: "Leé esta parte: «se ataba los cordones dos veces, porque una vez se le había salido el botín». ¿Qué palabra nos dice el motivo?", opciones:["porque", "antes", "dos"], correcta:0, claves:[/porque/, /antes/, /dos/] },
+          { pregunta: "Después de «porque», ¿qué le había pasado a Lucía?", opciones:["Se le salió el botín", "Perdió la pelota", "Se cayó"], correcta:0, claves:[/bot[ií]n|sali[oó]/, /pelota/, /cay/] }
+        ]
+      },
+      {
+        enunciado: "Al final del cuento, ¿cómo se sintieron sus compañeros?",
+        dicho: "Al final del cuento, ¿cómo se sintieron sus compañeros?",
+        opciones: ["Contentos", "Enojados", "Aburridos"], correcta: 0,
+        claves: [/content|feliz|alegr|bien/, /enoj|mal/, /aburr/],
+        pista: "Fijate qué hicieron sus compañeros al final: corrieron a abrazarla y la levantaron en andas.",
+        dibujo: { dicho: "Mirá: los compañeros levantan a Lucía en andas. Eso se hace cuando alguien ganó algo importante y todos están felices.", svg: () => enAndas() },
+        pasos: [
+          { pregunta: "¿Qué hizo Lucía en el último penal?", opciones:["Lo atajó", "Lo pateó", "Se fue"], correcta:0, claves:[/ataj/, /pate/, /fue/] },
+          { pregunta: "Si tu arquera ataja el penal y ganan la final, el equipo está…", opciones:["Contento", "Enojado", "Aburrido"], correcta:0, claves:[/content|feliz|alegr/, /enoj/, /aburr/] }
+        ]
+      }
+    ]
+  },
+
+  ciencias: {
+    tipo: "texto",
+    intro: {
+      titulo: "Las plantas",
+      texto: "Las plantas necesitan agua, luz y aire para crecer. Las raíces toman el agua de la tierra y las hojas usan la luz del sol para fabricar su alimento.",
+      dicho: "Ahora, ciencias. Las plantas necesitan agua, luz y aire para crecer. Las raíces toman el agua de la tierra, y las hojas usan la luz del sol para fabricar su alimento.",
+      corto: "Hoy: qué necesitan las plantas."
+    },
+    ejercicios: [
+      {
+        enunciado: "¿Qué parte de la planta toma el agua de la tierra?",
+        dicho: "¿Qué parte de la planta toma el agua de la tierra?",
+        opciones: ["La raíz", "La hoja", "La flor"], correcta: 0,
+        claves: [/ra[ií]z/, /hoja/, /flor/],
+        pista: "Pensá qué parte de la planta está debajo de la tierra.",
+        dibujo: { dicho: "Mirá la planta: arriba están la flor y las hojas, y abajo, metida en la tierra, la raíz. Por la raíz sube el agua.", svg: () => plantaPartes() },
+        pasos: [
+          { pregunta: "¿Dónde está el agua que toma la planta?", opciones:["En la tierra", "En el aire", "En el sol"], correcta:0, claves:[/tierra/, /aire/, /sol/] },
+          { pregunta: "¿Qué parte de la planta está metida en la tierra?", opciones:["La raíz", "La flor", "La hoja"], correcta:0, claves:[/ra[ií]z/, /flor/, /hoja/] }
+        ]
+      },
+      {
+        enunciado: "Dejaste una planta muchos días adentro de un placard cerrado. ¿Qué le falta?",
+        dicho: "Dejaste una planta muchos días adentro de un placard cerrado. ¿Qué le falta?",
+        opciones: ["Luz", "Agua", "Tierra"], correcta: 0,
+        claves: [/luz|sol/, /agua/, /tierra/],
+        pista: "En un placard cerrado no entra el sol.",
+        dibujo: { dicho: "Mirá las dos plantas. La de la ventana recibe sol y está verde. La del placard está a oscuras y se puso amarilla.", svg: () => dosPlantas() },
+        pasos: [
+          { pregunta: "¿Qué no entra en un placard cerrado?", opciones:["La luz del sol", "La tierra", "El agua"], correcta:0, claves:[/luz|sol/, /tierra/, /agua/] },
+          { pregunta: "Entonces, ¿qué le falta a la planta?", opciones:["Luz", "Agua", "Tierra"], correcta:0, claves:[/luz|sol/, /agua/, /tierra/] }
+        ]
+      }
+    ],
+    cierre: { titulo: "Scan armó tu grupo", texto: "Para la huerta vas a trabajar con Sofía y Bruno. Empiezan mañana a las 10.", dicho: "Una noticia: Scan armó tu grupo para la huerta. Vas a trabajar con Sofía y Bruno. Empiezan mañana a las diez." }
+  }
+};
+
+// Mi camino: ramas de la trayectoria. "actual" = índice del tramo en curso.
+const RAMAS = [
+  { id:"mate", nombre:"Matemática", estado:"activa", tramos:["Números grandes", "Fracciones", "Decimales", "Porcentajes"], actual:1 },
+  { id:"lengua", nombre:"Lengua", estado:"activa", tramos:["Cuentos", "Leer en voz alta", "Poesía", "Escribir cartas"], actual:0 },
+  { id:"ciencias", nombre:"Ciencias", estado:"activa", tramos:["Plantas", "Animales", "Cuerpo humano"], actual:0 },
+  { id:"historia", nombre:"Historia", estado:"activa", tramos:["Pueblos originarios", "La colonia", "La independencia"], actual:1 },
+  { id:"musica", nombre:"Música", estado:"pausa", desde:"7 de noviembre", tramos:["Ritmo", "Flauta", "Canto en grupo"], actual:1 }
+];
+
+// Mi perfil Scan
+const PERFIL = {
+  talentos: ["Cálculo mental", "Trabajo en equipo"],
+  intereses: [ { t:"Fútbol", n:23 }, { t:"Plantas", n:9 }, { t:"Dibujar", n:6 } ],
+  cuesta: ["Leer en voz alta", "Concentrarte después del almuerzo"],
+  focoPorHora: [ { h:8, v:2 }, { h:9, v:4 }, { h:10, v:4 }, { h:11, v:3 }, { h:12, v:2 }, { h:13, v:1 }, { h:14, v:2 }, { h:15, v:3 } ],
+  animoSemana: [ { d:"Lun", v:3 }, { d:"Mar", v:4 }, { d:"Mié", v:2 }, { d:"Jue", v:3 }, { d:"Vie", v:3 } ]
+};
+
+// Agenda del día. "antes" = lo que había antes de que Scan lo cambiara.
+const AGENDA = [
+  { h:"09:05", t:"Matemática", sub:"Fracciones", bloque:"mate" },
+  { h:"09:35", t:"Lengua", sub:"Cuento: La arquera", bloque:"lengua" },
+  { h:"10:00", t:"Recreo", sub:"20 minutos", ahora:true },
+  { h:"10:20", t:"Ciencias en la huerta", sub:"Con Sofía y Bruno", antes:"Ciencias, solo" },
+  { h:"11:00", t:"Matemática", sub:"Práctica de fracciones", antes:"Música" },
+  { h:"11:40", t:"Historia", sub:"La colonia" },
+  { h:"12:20", t:"Almuerzo" }
+];
+/* ===================== ESTADO ===================== */
+const S = {
+  pantalla: "inicio", tab: "hoy", desbloq: 0,
+  bloque: 0, ej: 0, metodo: 0, errores: 0, noEntiendo: 0, paso: 0,
+  hechos: [], lectura: 0, bajos: 0, ultimoDicho: "", animo: null,
+  escuchando: false, recon: null, micOk: false
+};
+const LOG_KEY = "scan-alumno-v01-log";
+let LOG = cargarLog();
+
+/* ===================== UTILIDADES ===================== */
+const $ = s => document.querySelector(s);
+const content = $("#content");
+const caption = $("#caption");
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+
+function cargarLog(){
+  const base = { inicio: new Date().toISOString(), notas: [], tareas: {}, noEntiendo: 0, porQue: 0, usoVoz: 0, usoBotones: 0, eventos: [] };
+  try { const g = JSON.parse(localStorage.getItem(LOG_KEY)); return g && g.notas ? g : base; } catch(e){ return base; }
+}
+function guardarLog(){ try { localStorage.setItem(LOG_KEY, JSON.stringify(LOG)); } catch(e){} }
+function evento(tipo, extra){ LOG.eventos.push(Object.assign({ t: new Date().toISOString(), tipo, pantalla: S.pantalla }, extra || {})); guardarLog(); }
+function tarea(nombre, fase){ LOG.tareas[nombre] = LOG.tareas[nombre] || {}; if (!LOG.tareas[nombre][fase]) LOG.tareas[nombre][fase] = new Date().toISOString(); guardarLog(); }
+
+/* ===================== VOZ: HABLAR ===================== */
+let vozES = null;
+function elegirVoz(){
+  if (!("speechSynthesis" in window)) return;
+  const v = speechSynthesis.getVoices();
+  vozES = v.find(x => /es[-_]AR/i.test(x.lang)) || v.find(x => /es[-_](419|US|MX)/i.test(x.lang)) || v.find(x => /^es/i.test(x.lang)) || null;
+}
+if ("speechSynthesis" in window){ elegirVoz(); speechSynthesis.onvoiceschanged = elegirVoz; }
+
+let hablaId = 0;
+function decir(texto, sub, alTerminar, visible){
+  const id = ++hablaId;
+  const cb = alTerminar; alTerminar = () => { if (id === hablaId && cb) cb(); };
+  S.ultimoDicho = texto;
+  caption.innerHTML = esc(visible || texto) + (sub ? "<small>" + esc(sub) + "</small>" : "");
+  $("#repeatBtn").hidden = false;
+  if (modoReal()){ decirIA(texto, alTerminar); return; }
+  const wrap = $("#orbWrap");
+  if (!PARAMETROS.VOZ_ACTIVA || !("speechSynthesis" in window)){
+    wrap.classList.add("speaking");
+    setTimeout(() => { if (id === hablaId) wrap.classList.remove("speaking"); alTerminar(); }, Math.min(4000, 600 + texto.length * 35));
+    return;
+  }
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = vozES ? vozES.lang : "es-AR"; if (vozES) u.voice = vozES;
+    u.rate = PARAMETROS.VOZ_VELOCIDAD; u.pitch = 1.05;
+    let listo = false;
+    const fin = () => { if (listo) return; listo = true; if (id === hablaId) wrap.classList.remove("speaking"); alTerminar(); };
+    u.onstart = () => wrap.classList.add("speaking");
+    u.onend = fin; u.onerror = fin;
+    speechSynthesis.speak(u);
+    setTimeout(fin, 1500 + texto.length * 90); // por si el navegador no avisa el final
+  } catch(e){ alTerminar(); }
+}
+function repetir(){ if (S.ultimoDicho) decir(S.ultimoDicho); evento("repetir"); }
+
+/* ===================== MODO REAL: TUTOR CON IA DE VOZ (ElevenLabs Agents) =====================
+   Modo testing: voz robótica del navegador + reconocimiento del navegador. No gasta créditos.
+   Modo real:    un agente de ElevenLabs habla y escucha. La app sigue mandando: en cada pantalla le pasa
+                 al agente el guion de ese momento ([SISTEMA]) y el agente lo dice con sus palabras.
+                 Cuando el chico habla, el agente usa herramientas (client tools) para mover la app.
+   Si el modo real falla (sin internet, sin créditos, sin micrófono), vuelve solo al modo testing. */
+const SDK_ELEVENLABS = "https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.31.0/dist/lib.iife.js";
+const CFG_KEY = "scan-alumno-config";
+const AGENT_ID_MISENO = "agent_9401m714e6nhf2nbf291sjvqfysd"; // agente "Miseño" en ElevenLabs
+const CFG = (() => { try { return Object.assign({ modo: "testing", agentId: "" }, JSON.parse(localStorage.getItem(CFG_KEY)) || {}); } catch(e){ return { modo: "testing", agentId: "" }; } })();
+if (!CFG.agentId) CFG.agentId = AGENT_ID_MISENO;
+function guardarCfg(){ try { localStorage.setItem(CFG_KEY, JSON.stringify(CFG)); } catch(e){} }
+const IA = { conv: null, estado: "apagado", hablando: false, pendiente: null, buffer: null, timerSeguro: null };
+const modoReal = () => CFG.modo === "real" && IA.estado === "conectado";
+
+const PROMPT_TUTOR = () => `Te llamás Miseño. Sos el tutor de voz de Scan, el sistema que usa una escuela primaria en el año 2050. Si te preguntan cómo te llamás, decí que sos Miseño. Hablás con ${PARAMETROS.NOMBRE_ALUMNO}, un chico de 10 a 12 años. Le gusta el ${PARAMETROS.INTERES_PRINCIPAL}.
+
+CÓMO HABLÁS
+- Español rioplatense, de "vos". Cálido, tranquilo, con energía de buen maestro.
+- Oraciones cortas y palabras simples. Máximo 2 oraciones por turno, salvo cuando te piden leer un texto.
+- No uses emojis, listas ni símbolos: todo lo que escribís se dice en voz alta.
+
+EL GUION (lo manda la app)
+- Los mensajes que empiezan con [SISTEMA] vienen de la app, no del chico. Dicen en qué pantalla está y qué le tenés que decir.
+- Decilo con tus palabras, pero sin cambiar datos, números, nombres ni opciones de respuesta. No agregues contenido nuevo.
+- Si el mensaje dice LEÉ TEXTUAL, leé exactamente ese texto, sin agregar nada antes ni después.
+- Nunca menciones la app, el [SISTEMA], las herramientas ni que recibiste instrucciones.
+
+CUANDO EL CHICO HABLA, usá una herramienta para que la app haga lo que corresponde:
+- registrar_animo: cuando cuenta cómo se siente. Elegí la opción más cercana: contento, tranquilo, nervioso o cansado.
+- elegir_respuesta: cuando responde una pregunta que tiene opciones. Mandá el número de opción (0 para la primera, 1 para la segunda, 2 para la tercera). Si su respuesta no coincide claramente con ninguna opción, pedile que la repita o que la toque en la pantalla.
+- no_entiende: cuando dice que no entiende o pide que le expliques de otra forma.
+- seguir: cuando dice que está listo, que ya terminó, que quiere seguir o arrancar.
+- enviar_mensaje_chat: en el recreo, cuando quiere mandarle un mensaje a sus amigos. Mandá el mensaje como lo diría él.
+- avisar_docente: si cuenta algo personal que preocupa (está muy triste, alguien lo lastima, problemas en su casa, peleas fuertes) o pide ayuda que no es de la lección.
+- Después de usar una herramienta, decí lo que indique su resultado.
+
+REGLAS QUE NO SE ROMPEN
+- Nunca des la respuesta correcta. Guiá con pistas cortas.
+- Si pregunta por qué Scan decidió algo (sus materias, una materia en pausa, su grupo, su horario, su perfil), respondé solamente: "Scan eligió el mejor camino para vos según cómo aprendés". No inventes ni supongas motivos.
+- No sos su psicólogo ni su amigo íntimo. Si cuenta algo personal o difícil, respondé breve y con cariño, usá avisar_docente, decile que su maestra va a venir a acompañarlo y volvé a la actividad. No hagas preguntas sobre eso ni des consejos.
+- No le pidas datos personales. Fuera del check-in, no hagas preguntas personales.
+- Si habla de otra cosa (juegos, videos, chistes), respondé en una oración y volvé a la actividad.`;
+
+function cargarSDK(){
+  if (window.ElevenLabsClient) return Promise.resolve(window.ElevenLabsClient);
+  return new Promise((ok, mal) => {
+    const s = document.createElement("script"); s.src = SDK_ELEVENLABS;
+    s.onload = () => window.ElevenLabsClient ? ok(window.ElevenLabsClient) : mal(new Error("SDK sin cargar"));
+    s.onerror = () => mal(new Error("No se pudo descargar el SDK de ElevenLabs"));
+    document.head.appendChild(s);
+  });
+}
+function pintarModo(){
+  const real = CFG.modo === "real";
+  const chip = $("#modoChip");
+  if (chip){
+    chip.textContent = !real ? "Modo testing" : IA.estado === "conectado" ? "Modo real" : IA.estado === "conectando" ? "Conectando IA…" : "Real (sin conexión)";
+    chip.className = "modo-chip " + (!real ? "test" : IA.estado === "conectado" ? "real" : "warn");
+  }
+  const st = $("#iaEstado");
+  if (st) st.textContent = !real ? "Voz robótica del navegador. No gasta créditos." : IA.estado === "conectado" ? "Conectado al agente de ElevenLabs." : IA.estado === "conectando" ? "Conectando…" : IA.error ? "No conectó: " + IA.error + ". Se usa la voz robótica." : "Se conecta al tocar “Tocá para empezar”.";
+  document.querySelectorAll("[name=modo]").forEach(r => r.checked = r.value === CFG.modo);
+  const inp = $("#agentId"); if (inp && document.activeElement !== inp) inp.value = CFG.agentId;
+}
+async function conectarIA(){
+  if (CFG.modo !== "real") return false;
+  if (!CFG.agentId){ IA.error = "falta el Agent ID"; IA.estado = "error"; pintarModo(); return false; }
+  IA.estado = "conectando"; IA.error = ""; pintarModo();
+  caption.textContent = "Conectando con Scan…";
+  try {
+    const { Conversation } = await cargarSDK();
+    IA.conv = await Conversation.startSession({
+      agentId: CFG.agentId,
+      overrides: { agent: { prompt: { prompt: PROMPT_TUTOR() }, firstMessage: "", language: "es" } },
+      clientTools: HERRAMIENTAS,
+      onConnect: () => { IA.estado = "conectado"; pintarModo(); evento("ia_conectada"); },
+      onDisconnect: () => { const era = IA.estado; IA.estado = "apagado"; IA.conv = null; pintarModo(); if (era === "conectado") evento("ia_desconectada"); },
+      onError: e => { IA.error = String((e && e.message) || e); evento("ia_error", { error: IA.error }); pintarModo(); },
+      onModeChange: ({ mode }) => {
+        const wrap = $("#orbWrap");
+        if (mode === "speaking"){ IA.hablando = true; clearTimeout(IA.timerSeguro); wrap.classList.add("speaking"); wrap.classList.remove("listening"); }
+        else { const habia = IA.hablando; IA.hablando = false; wrap.classList.remove("speaking"); wrap.classList.add("listening"); if (habia) correrPendiente(); }
+      },
+      onMessage: m => {
+        const rol = m.role || (m.source === "ai" ? "agent" : "user");
+        LOG.conversacion = LOG.conversacion || []; LOG.conversacion.push({ t: new Date().toISOString(), rol, texto: m.message }); guardarLog();
+        if (rol === "agent") caption.textContent = m.message;
+        else { const h = $("#heard"); if (h) h.textContent = "Te escuché: “" + m.message + "”"; }
+      }
+    });
+    IA.estado = "conectado"; pintarModo();
+    return true;
+  } catch(e){
+    IA.estado = "error"; IA.error = (e && e.message) || "error de conexión"; IA.conv = null;
+    evento("ia_fallo_conexion", { error: IA.error }); pintarModo();
+    return false;
+  }
+}
+function correrPendiente(){ const cb = IA.pendiente; IA.pendiente = null; clearTimeout(IA.timerSeguro); if (cb) cb(); }
+// decir() en modo real: le pasa el guion al agente. Si estamos adentro de una herramienta, lo junta para devolverlo como resultado.
+function decirIA(texto, alTerminar){
+  IA.pendiente = alTerminar || null;
+  if (IA.buffer){ IA.buffer.push(texto); return; }
+  const pantalla = S.tab === "hoy" ? S.pantalla + (S.pantalla === "bloque" ? " · " + PLAN[S.bloque].materia + " · " + S.modo : "") : S.tab;
+  const msg = S.textual ? `[SISTEMA] Pantalla: ${pantalla}. LEÉ TEXTUAL: "${texto}"` : `[SISTEMA] Pantalla: ${pantalla}. Decile al alumno: "${texto}"`;
+  try { IA.conv.sendUserMessage(msg); } catch(e){ evento("ia_error_envio"); }
+  // por si el agente no llega a hablar: no dejar la app trabada
+  clearTimeout(IA.timerSeguro); IA.timerSeguro = setTimeout(() => { if (!IA.hablando) correrPendiente(); }, 9000);
+}
+// Corre una acción de la app y devuelve al agente lo que la app quería decir, como resultado de la herramienta.
+function conAgente(nombre, accion){
+  evento("ia_herramienta", { herramienta: nombre });
+  IA.buffer = [];
+  let r;
+  try { r = accion(); } finally { const dichos = IA.buffer; IA.buffer = null; if (typeof r !== "string") r = dichos.length ? "Decile al alumno: " + dichos.join(" ") : "Hecho. Seguí con la actividad."; }
+  return r;
+}
+const HERRAMIENTAS = {
+  registrar_animo: ({ animo }) => conAgente("registrar_animo", () => {
+    if (!(S.tab === "hoy" && S.pantalla === "checkin")) return "Ahora no es el momento del check-in. Seguí con la actividad.";
+    const id = ["contento", "tranquilo", "nervioso", "cansado"].includes(animo) ? animo : "tranquilo";
+    elegirAnimo(id);
+  }),
+  elegir_respuesta: ({ indice }) => conAgente("elegir_respuesta", () => {
+    const i = Number(indice);
+    if (!(S.tab === "hoy" && S.pantalla === "bloque" && (S.modo === "pregunta" || S.modo === "pasos"))) return "Ahora no hay una pregunta para responder.";
+    if (!boton(i)) return "Esa opción no existe. Pedile que repita o que toque su respuesta.";
+    if (S.modo === "pasos") responderPaso(i); else responder(i);
+  }),
+  no_entiende: () => conAgente("no_entiende", () => {
+    if (!(S.tab === "hoy" && S.pantalla === "bloque" && S.modo !== "intro")) return "Explicale de nuevo lo que está en pantalla, más simple.";
+    noEntiendo("ia");
+  }),
+  seguir: () => conAgente("seguir", () => {
+    const b = content.querySelector("#seguirEtapa, #seguir, #arrancar, #sigBloque, #volver, #siResp, #cortar, .big.primary");
+    if (!b) return "No hay nada para avanzar ahora. Seguí con la actividad.";
+    b.click();
+  }),
+  enviar_mensaje_chat: ({ texto }) => conAgente("enviar_mensaje_chat", () => {
+    if (S.tab !== "recreo") return "El chat es solo en el recreo.";
+    enviar(String(texto || "").slice(0, 140));
+    return "Mensaje enviado. Decile que ya lo mandaste, en pocas palabras.";
+  }),
+  avisar_docente: ({ motivo }) => conAgente("avisar_docente", () => {
+    evento("derivado_a_docente", { origen: "ia", motivo: String(motivo || "").slice(0, 200) });
+    pulsera("Aviso", "a tu seño", true);
+    return "Ya le avisaste a la maestra. Decile con cariño, en una oración, que su maestra va a venir a acompañarlo, y volvé a la actividad.";
+  })
+};
+function terminarIA(){ try { IA.conv && IA.conv.endSession(); } catch(e){} }
+window.addEventListener("pagehide", terminarIA);
+
+/* ===================== VOZ: ESCUCHAR ===================== */
+const Recon = window.SpeechRecognition || window.webkitSpeechRecognition;
+let alEscuchar = null; // función que recibe el texto oído en la pantalla actual
+
+function prepararRecon(){
+  if (!Recon) return;
+  try {
+    const r = new Recon(); r.lang = "es-AR"; r.interimResults = true; r.continuous = false;
+    r.onresult = ev => {
+      let t = ""; for (const res of ev.results) t += res[0].transcript;
+      const h = $("#heard"); if (h) h.textContent = "Te escuché: “" + t + "”";
+      if (ev.results[ev.results.length - 1].isFinal){ LOG.usoVoz++; guardarLog(); procesarVoz(t); }
+    };
+    r.onerror = ev => {
+      if (ev.error === "not-allowed" || ev.error === "service-not-allowed"){ S.micOk = false; render(); }
+      pararEscucha();
+    };
+    r.onend = () => pararEscucha();
+    S.recon = r; S.micOk = true;
+  } catch(e){ S.micOk = false; }
+}
+function empezarEscucha(){
+  if (modoReal() || !S.recon || S.escuchando) return;
+  try { speechSynthesis && speechSynthesis.cancel(); } catch(e){}
+  try { S.recon.start(); S.escuchando = true; $("#orbWrap").classList.add("listening"); const m = $("#mic"); if (m) m.classList.add("on"); } catch(e){}
+}
+function pararEscucha(){
+  if (S.recon && S.escuchando){ try { S.recon.stop(); } catch(e){} }
+  S.escuchando = false; $("#orbWrap").classList.remove("listening"); const m = $("#mic"); if (m) m.classList.remove("on");
+}
+const PALABRAS_NUM = { uno:1, una:1, un:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9, diez:10, doce:12, treinta:30, sesenta:60, noventa:90, "cuarenta y cinco":45 };
+function numeroDe(t){
+  const d = t.match(/\d+/); if (d) return Number(d[0]);
+  const s = t.toLowerCase();
+  if (s.includes("cuarenta y cinco")) return 45;
+  for (const w of s.split(/\s+/)) if (PALABRAS_NUM[w] !== undefined) return PALABRAS_NUM[w];
+  return null;
+}
+function procesarVoz(t){
+  const s = t.toLowerCase();
+  if (/no entiendo|no entend|no s[eé]/.test(s)){ noEntiendo("voz"); return; }
+  if (/repet/.test(s)){ repetir(); return; }
+  if (alEscuchar) alEscuchar(s);
+}
+function micHTML(texto){
+  if (modoReal()) return `<div class="mic-wrap"><span class="mic live" aria-hidden="true">${ICON_MIC}</span>Scan te escucha. Hablá cuando quieras.<div class="heard" id="heard"></div></div>`;
+  if (!Recon) return `<div class="mic-wrap"><button class="mic" id="mic" disabled aria-label="Micrófono no disponible">${ICON_MIC}</button>Este navegador no escucha. Usá los botones.</div>`;
+  if (!S.micOk) return `<div class="mic-wrap"><button class="mic" id="mic" disabled aria-label="Micrófono bloqueado">${ICON_MIC}</button>Micrófono bloqueado. Usá los botones.</div>`;
+  return `<div class="mic-wrap"><button class="mic" id="mic" aria-label="Mantené apretado para hablar">${ICON_MIC}</button>${esc(texto || "Mantené apretado y hablá")}<div class="heard" id="heard"></div></div>`;
+}
+const ICON_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></svg>';
+const ICON_HELP = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>';
+function conectarMic(){
+  const m = $("#mic"); if (!m || m.disabled) return;
+  m.addEventListener("pointerdown", e => { e.preventDefault(); empezarEscucha(); });
+  ["pointerup","pointerleave","pointercancel"].forEach(ev => m.addEventListener(ev, () => { if (S.escuchando) try { S.recon.stop(); } catch(e){} }));
+}
+
+/* ===================== PULSERA Y LECTURA SCAN ===================== */
+function pulsera(main, sub, vibrar){
+  $("#bandMain").textContent = main; $("#bandSub").textContent = sub || "";
+  if (vibrar){ const f = $("#bandFace"); f.classList.remove("buzz"); void f.offsetWidth; f.classList.add("buzz"); try { navigator.vibrate && navigator.vibrate(120); } catch(e){} }
+}
+function pintarDots(id, n){
+  const el = $(id); [...el.children].forEach((b, i) => b.classList.toggle("on", i < n)); el.classList.toggle("low", n <= 2);
+}
+function pintarLectura(){
+  const [foco, animo] = LECTURAS[S.lectura % LECTURAS.length];
+  pintarDots("#focusDots", foco); pintarDots("#moodDots", S.animo !== null && S.lectura === 0 ? S.animo : animo);
+}
+let timerLectura = null;
+function arrancarLecturas(){
+  clearInterval(timerLectura);
+  timerLectura = setInterval(() => {
+    S.lectura++; pintarLectura();
+    const foco = LECTURAS[S.lectura % LECTURAS.length][0];
+    S.bajos = foco <= 2 ? S.bajos + 1 : 0;
+    if (S.bajos >= PARAMETROS.FOCO_BAJO_LECTURAS && S.pantalla === "bloque" && S.tab === "hoy"){ S.bajos = 0; ofrecerPausaCorta(); }
+  }, PARAMETROS.LECTURA_SCAN_CADA_S * 1000);
+}
+function ofrecerPausaCorta(){
+  if ($("#banner")) return;
+  evento("pausa_por_foco");
+  const b = document.createElement("div"); b.className = "banner"; b.id = "banner";
+  b.innerHTML = `<span>Scan notó que te cuesta concentrarte. ¿Te estirás 20 segundos?</span><button id="bannerOk">Dale</button><button id="bannerNo" style="background:transparent;color:var(--ink-soft)">Seguir</button>`;
+  $("#stage").appendChild(b);
+  decir("Noté que te cuesta concentrarte. ¿Te estirás un poquito?");
+  $("#bannerOk").onclick = () => { b.remove(); pulsera("Estirate", "20 s", true); decir("Estirá los brazos para arriba, bien alto. Ahora para los costados.", null, () => setTimeout(() => { pulsera(PLAN[S.bloque].corto, "seguimos"); repetirPregunta(); }, 4000)); };
+  $("#bannerNo").onclick = () => { b.remove(); repetirPregunta(); };
+}
+
+function miniPlan(){
+  $("#miniPlan").innerHTML = PLAN.map((p, i) => {
+    const cls = S.hechos.includes(p.id) ? "done" : (S.tab === "hoy" && S.pantalla === "bloque" && i === S.bloque ? "now" : "");
+    const recreo = p.despuesRecreo ? `<li class="${S.tab === "recreo" ? "now" : S.desbloq >= 4 && S.tab === "hoy" ? "done" : ""}"><span>Recreo</span><span>20'</span></li>` : "";
+    return recreo + `<li class="${cls}"><span>${esc(p.materia)}</span><span>${p.min}'</span></li>`;
+  }).join("");
+}
+
+/* ===================== PANTALLAS ===================== */
+function render(){
+  miniPlan();
+  $("#stage").classList.toggle("compact", S.tab !== "hoy" || ["plan","bloque"].includes(S.pantalla));
+  if (S.tab !== "hoy"){ $("#repeatBtn").hidden = false; return ({ camino: pCamino, perfil: pPerfil, agenda: pAgenda, recreo: pRecreo }[S.tab])(); }
+  ({ inicio: pInicio, checkin: pCheckin, respirarOferta: pRespirarOferta, respirar: pRespirar, plan: pPlan, bloque: pBloque, finBloque: pFinBloque, finDia: pFinDia }[S.pantalla] || pInicio)();
+}
+function ir(p){ S.pantalla = p; alEscuchar = null; pararEscucha(); $("#stage").scrollTop = 0; render(); }
+
+function pInicio(){
+  caption.innerHTML = "";
+  $("#repeatBtn").hidden = true;
+  content.innerHTML = `<div class="start"><button class="big primary" id="startBtn">Tocá para empezar</button><p>Scan va a hablarte. Si estás en el aula, subí el volumen o usá auriculares.</p></div>`;
+  $("#startBtn").onclick = async () => {
+    $("#startBtn").disabled = true;
+    prepararRecon();
+    // primer audio desde un toque: habilita la voz en el navegador
+    try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch(e){}
+    if (CFG.modo === "real") await conectarIA();
+    tarea("t1_checkin_y_arrancar", "inicio"); evento("inicio", { modo: modoReal() ? "real" : "testing" });
+    arrancarLecturas(); ir("checkin");
+  };
+}
+
+const MOODS = [
+  { id:"contento", label:"Contento", nivel:4, cara:'<circle cx="36" cy="36" r="32" fill="#FFD66B"/><circle cx="25" cy="30" r="4" fill="#1F2733"/><circle cx="47" cy="30" r="4" fill="#1F2733"/><path d="M22 44c8 9 20 9 28 0" stroke="#1F2733" stroke-width="4" fill="none" stroke-linecap="round"/>' },
+  { id:"tranquilo", label:"Tranquilo", nivel:3, cara:'<circle cx="36" cy="36" r="32" fill="#BFE3CF"/><path d="M20 31c3-3 7-3 10 0M42 31c3-3 7-3 10 0" stroke="#1F2733" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M26 46c6 4 14 4 20 0" stroke="#1F2733" stroke-width="4" fill="none" stroke-linecap="round"/>' },
+  { id:"nervioso", label:"Nervioso", nivel:2, cara:'<circle cx="36" cy="36" r="32" fill="#F9C9A4"/><circle cx="25" cy="30" r="5" fill="#fff" stroke="#1F2733" stroke-width="3"/><circle cx="47" cy="30" r="5" fill="#fff" stroke="#1F2733" stroke-width="3"/><path d="M22 48l6-4 6 4 6-4 6 4 4-3" stroke="#1F2733" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' },
+  { id:"cansado", label:"Cansado", nivel:1, cara:'<circle cx="36" cy="36" r="32" fill="#CFD8EA"/><path d="M19 31h11M42 31h11" stroke="#1F2733" stroke-width="4" stroke-linecap="round"/><ellipse cx="36" cy="48" rx="6" ry="5" fill="#1F2733"/><text x="50" y="18" font-size="12" fill="#5E6878" font-family="sans-serif">z</text>' }
+];
+function pCheckin(){
+  pulsera("Hola", PARAMETROS.NOMBRE_ALUMNO, true);
+  content.innerHTML = `
+    <div class="mood" role="group" aria-label="¿Cómo te sentís?">
+      ${MOODS.map((m, i) => `<button data-mood="${m.id}"><svg viewBox="0 0 72 72" aria-hidden="true">${m.cara}</svg>${m.label}<span class="key">${i + 1}</span></button>`).join("")}
+    </div>
+    <div class="actions">${micHTML("Mantené apretado y contale cómo estás")}</div>`;
+  content.querySelectorAll("[data-mood]").forEach(b => b.onclick = () => { LOG.usoBotones++; elegirAnimo(b.dataset.mood); });
+  conectarMic();
+  alEscuchar = s => {
+    if (/content|feliz|bien|genial|re bien/.test(s)) elegirAnimo("contento");
+    else if (/tranqui|normal|m[aá]s o menos/.test(s)) elegirAnimo("tranquilo");
+    else if (/nervi|ansios|miedo|preocup/.test(s)) elegirAnimo("nervioso");
+    else if (/cansad|sue[ñn]o|aburr|mal/.test(s)) elegirAnimo("cansado");
+    else decir("No te entendí bien. Podés tocar una carita.");
+  };
+  decir(`¡Hola, ${PARAMETROS.NOMBRE_ALUMNO}! Buen día. ¿Cómo te sentís hoy?`, "Tocá una carita o contámelo");
+}
+function elegirAnimo(id){
+  const m = MOODS.find(x => x.id === id); S.animo = m.nivel; pintarDots("#moodDots", m.nivel);
+  evento("animo", { valor: id });
+  if (m.nivel <= 2) ir("respirarOferta");
+  else { decir(id === "contento" ? "¡Qué bueno! Arranquemos con todo." : "Bien. Vamos tranqui.", null, () => ir("plan")); }
+}
+
+function pRespirarOferta(){
+  const animo = MOODS.find(m => m.nivel === S.animo);
+  content.innerHTML = `<div class="choices"><button class="big primary" id="siResp">Sí, respiremos</button><button class="big ghost" id="noResp">Saltear</button></div><div class="actions">${micHTML("Decí “sí” o “no”")}</div>`;
+  $("#siResp").onclick = () => { LOG.usoBotones++; ir("respirar"); };
+  $("#noResp").onclick = () => { LOG.usoBotones++; evento("respiracion_salteada"); ir("plan"); };
+  conectarMic();
+  alEscuchar = s => { if (/s[ií]|dale|bueno|ok/.test(s)) ir("respirar"); else if (/no|salte/.test(s)) ir("plan"); };
+  decir(`Gracias por contarme. ¿Hacemos una pausa de ${PARAMETROS.TIEMPO_RESPIRACION_S} segundos para respirar juntos?`, animo ? "Me dijiste: " + animo.label.toLowerCase() : null);
+}
+
+let timerResp = null;
+function pRespirar(){
+  evento("respiracion");
+  const wrap = $("#orbWrap"), orb = $("#orb");
+  wrap.classList.add("breath");
+  let quedan = PARAMETROS.TIEMPO_RESPIRACION_S, fase = 0;
+  content.innerHTML = `<div class="note-card"><strong id="respFase">Inspirá…</strong><span id="respT">${quedan} s</span></div><div class="actions"><button class="big ghost" id="cortar">Ya estoy</button></div>`;
+  const ciclo = () => {
+    const entra = fase % 2 === 0;
+    orb.style.transform = entra ? "scale(1.25)" : "scale(.9)";
+    $("#respFase").textContent = entra ? "Inspirá…" : "Soltá…";
+    pulsera(entra ? "Inspirá" : "Soltá", quedan + " s");
+    if (fase === 0) decir("Inspirá despacio por la nariz… y soltá por la boca. Seguí la bolita.");
+    fase++;
+  };
+  ciclo();
+  const salir = () => { clearInterval(timerResp); orb.style.transform = ""; wrap.classList.remove("breath"); };
+  let paso = 0;
+  timerResp = setInterval(() => {
+    quedan--; paso++;
+    const t = $("#respT"); if (t) t.textContent = quedan + " s";
+    if (paso % 4 === 0) ciclo();
+    if (quedan <= 0){ salir(); decir("Muy bien. Ahora sí, vamos.", null, () => ir("plan")); }
+  }, 1000);
+  $("#cortar").onclick = () => { salir(); evento("respiracion_cortada", { quedaban: quedan }); ir("plan"); };
+}
+
+function pPlan(){
+  pulsera("Tu día", PLAN.length + " bloques");
+  content.innerHTML = `
+    <div class="plan">
+      ${PLAN.map((p, i) => `${p.despuesRecreo ? '<div class="plan-break">Recreo · 20 min</div>' : ""}<div class="plan-item ${S.hechos.includes(p.id) ? "done" : ""} ${i === S.bloque && !S.hechos.includes(p.id) ? "now" : ""}">
+        <div class="ic" style="background:${p.color};color:${p.ink}">${p.letra}</div>
+        <div><h3>${esc(p.materia)}</h3><p>${esc(p.tema)}</p></div>
+        <div class="mins">${p.min}'</div></div>`).join("")}
+    </div>
+    <div class="actions"><button class="big primary" id="arrancar">Arrancar</button>${micHTML("Decí “arrancar”")}</div>`;
+  $("#arrancar").onclick = () => { LOG.usoBotones++; arrancarBloque(); };
+  conectarMic();
+  alEscuchar = s => { if (/arranc|empez|dale|vamos|listo|s[ií]/.test(s)) arrancarBloque(); };
+  const antes = PLAN.filter(p => !p.despuesRecreo), despues = PLAN.filter(p => p.despuesRecreo);
+  decir(`Hoy Scan armó tu mañana. Antes del recreo: ${antes.map(p => p.materia).join(" y ")}.${despues.length ? " Después del recreo: " + despues.map(p => p.materia).join(" y ") + "." : ""} ¿Arrancamos?`, null, null, "Scan armó tu mañana. ¿Arrancamos?");
+}
+function arrancarBloque(){
+  const b = PLAN[S.bloque];
+  tarea("t1_checkin_y_arrancar", "fin");
+  if (!b){ ir("finDia"); return; }
+  S.ej = 0; S.metodo = 0; S.errores = 0; S.noEntiendo = 0; S.paso = 0;
+  if (b.id === "mate") tarea("t2_no_entiendo", "inicio");
+  evento("bloque_inicio", { bloque: b.id });
+  S.pantalla = "bloque"; S.modo = "intro"; render();
+}
+
+/* ---- Bloques (Matemática, Lengua, Ciencias) ---- */
+const bloqueActual = () => BLOQUES[PLAN[S.bloque].id];
+function cabeceraBloque(){
+  const b = PLAN[S.bloque], n = bloqueActual().ejercicios.length;
+  const pct = Math.round(100 * S.ej / n);
+  const cuenta = S.modo === "intro" ? "Intro" : `${Math.min(S.ej + 1, n)} de ${n}`;
+  return `<div class="block-head"><span class="chip"><b style="color:${b.ink}">${esc(b.materia)}</b>· ${esc(b.tema)}</span><span class="progress" aria-label="Avance del bloque"><i style="width:${pct}%"></i></span><span class="chip">${cuenta}</span></div>`;
+}
+function botonesOpciones(opciones){
+  const txt = bloqueActual().tipo === "texto";
+  return `<div class="choices${txt ? " col" : ""}">${opciones.map((o, i) => `<button class="big${txt ? " txt" : ""}" data-i="${i}"><span class="opt-n">${i + 1}</span>${esc(o)}</button>`).join("")}</div>`;
+}
+function indiceOido(s, item){
+  if (bloqueActual().tipo === "num"){ const n = numeroDe(s); return n === null ? -1 : item.opciones.findIndex(o => Number(o) === n); }
+  return (item.claves || []).findIndex(r => r.test(s));
+}
+function pBloque(){
+  const blo = bloqueActual(), b = PLAN[S.bloque];
+  const e = blo.ejercicios[S.ej];
+  pulsera(b.corto, S.modo === "intro" ? "empezamos" : "ejercicio " + (S.ej + 1));
+  if (S.modo === "intro"){
+    const it = blo.intro;
+    if (it.cuento){
+      content.innerHTML = cabeceraBloque() + `<div class="story"><h3>${esc(it.titulo)}</h3>${it.cuento.map((p, i) => `<p data-p="${i}">${esc(p)}</p>`).join("")}</div>
+        <div class="actions"><button class="big primary" id="seguir">Ya lo escuché</button><button class="big ghost" id="releer">Leer de nuevo</button></div>`;
+      $("#releer").onclick = () => leerCuento();
+    } else {
+      content.innerHTML = cabeceraBloque() + `<div class="note-card"><strong>${esc(it.titulo)}</strong>${esc(it.texto)}</div><div class="actions"><button class="big primary" id="seguir">Seguir</button></div>`;
+    }
+    $("#seguir").onclick = () => { S.modo = "pregunta"; render(); };
+    alEscuchar = s => { if (/segu|dale|listo|ya|s[ií]/.test(s)) { S.modo = "pregunta"; render(); } };
+    if (it.cuento) leerCuento(); else decir(it.dicho, null, null, it.corto);
+    return;
+  }
+  if (S.modo === "dibujo"){
+    content.innerHTML = cabeceraBloque() + `<span class="method-tag">Otra forma: con un dibujo</span><div class="visual">${e.dibujo.svg()}</div>
+      <div class="actions"><button class="big primary" id="volver">Ya entendí, probar</button><button class="noent" id="noent">${ICON_HELP}No entiendo</button></div>`;
+    $("#volver").onclick = () => { S.modo = "pregunta"; render(); };
+    $("#noent").onclick = () => noEntiendo("boton");
+    alEscuchar = s => { if (/entend[ií]|prob|dale|listo|ya/.test(s)) { S.modo = "pregunta"; render(); } };
+    decir(e.dibujo.dicho, null, null, "Mirá este dibujo.");
+    return;
+  }
+  if (S.modo === "pasos"){
+    const p = e.pasos[S.paso];
+    content.innerHTML = cabeceraBloque() + `<span class="method-tag">Otra forma: paso a paso · paso ${S.paso + 1} de ${e.pasos.length}</span><div class="problem">${esc(p.pregunta)}</div>
+      ${botonesOpciones(p.opciones)}
+      <div class="actions">${micHTML(blo.tipo === "num" ? "Decí el número" : "Decí tu respuesta")}<button class="noent" id="noent">${ICON_HELP}No entiendo</button></div>`;
+    content.querySelectorAll("[data-i]").forEach(x => x.onclick = () => { LOG.usoBotones++; responderPaso(Number(x.dataset.i), x); });
+    $("#noent").onclick = () => noEntiendo("boton");
+    conectarMic();
+    alEscuchar = s => { const i = indiceOido(s, p); if (i >= 0) responderPaso(i); else decir("No te entendí. Podés tocar tu respuesta."); };
+    decir(p.pregunta, null, null, "Vamos paso a paso.");
+    return;
+  }
+  // pregunta principal
+  content.innerHTML = cabeceraBloque() + `<div class="problem">${e.enunciado}</div>
+    ${botonesOpciones(e.opciones)}
+    <div class="actions">${micHTML(blo.tipo === "num" ? "Decí el número" : "Decí tu respuesta")}<button class="noent" id="noent">${ICON_HELP}No entiendo</button></div>`;
+  content.querySelectorAll("[data-i]").forEach(x => x.onclick = () => { LOG.usoBotones++; responder(Number(x.dataset.i), x); });
+  $("#noent").onclick = () => noEntiendo("boton");
+  conectarMic();
+  alEscuchar = s => { const i = indiceOido(s, e); if (i >= 0) responder(i); else decir("No te entendí. Podés tocar tu respuesta."); };
+  decir(e.dicho, null, null, S.errores || S.noEntiendo ? "Probá de nuevo." : "Tu turno.");
+}
+function leerCuento(){
+  const it = bloqueActual().intro;
+  const marcar = i => content.querySelectorAll("[data-p]").forEach(p => p.classList.toggle("leyendo", Number(p.dataset.p) === i));
+  const leer = i => {
+    if (i >= it.cuento.length){ marcar(-1); decir("Fin del cuento. ¿Lo escuchaste bien? Tocá “Ya lo escuché” para las preguntas.", null, null, "Fin del cuento."); return; }
+    marcar(i); S.textual = true; decir(it.cuento[i], null, () => leer(i + 1), "Escuchá el cuento."); S.textual = false;
+  };
+  decir(it.dicho, null, () => leer(0), it.corto);
+}
+function repetirPregunta(){ if (S.pantalla === "bloque") render(); }
+function boton(i){ return content.querySelector(`[data-i="${i}"]`); }
+function marcarMal(el){ if (el){ el.classList.remove("wrong"); void el.offsetWidth; el.classList.add("wrong"); } }
+
+function responder(i, el){
+  const e = bloqueActual().ejercicios[S.ej]; el = el || boton(i);
+  evento("respuesta", { bloque: PLAN[S.bloque].id, ejercicio: S.ej + 1, valor: e.opciones[i], correcta: i === e.correcta });
+  if (i === e.correcta){
+    if (el) el.classList.add("right");
+    pulsera("¡Bien!", "", true);
+    decir(`¡Eso! ${e.opciones[e.correcta]}.`, null, () => siguienteEjercicio(), "¡Eso!");
+    return;
+  }
+  marcarMal(el);
+  S.errores++;
+  if (S.errores === 1) decir("Casi. Te doy una pista: " + e.pista);
+  else { S.errores = 0; noEntiendo("dos_errores"); }
+}
+function responderPaso(i, el){
+  const e = bloqueActual().ejercicios[S.ej], p = e.pasos[S.paso]; el = el || boton(i);
+  if (i !== p.correcta){ marcarMal(el); decir("Mmm, no. Mirá de nuevo: " + p.pregunta, null, null, "Mmm, no. Mirá de nuevo."); return; }
+  if (el) el.classList.add("right");
+  if (S.paso < e.pasos.length - 1){ S.paso++; decir("¡Bien!", null, () => render()); }
+  else { S.paso = 0; S.modo = "pregunta"; decir("¡Bien! Ahora probá con la pregunta.", null, () => render()); }
+}
+function noEntiendo(origen){
+  if (S.tab !== "hoy" || S.pantalla !== "bloque" || S.modo === "intro") return;
+  S.noEntiendo++; LOG.noEntiendo++; evento("no_entiendo", { origen, bloque: PLAN[S.bloque].id, ejercicio: S.ej + 1, vez: S.noEntiendo });
+  tarea("t2_no_entiendo", "uso");
+  if (S.noEntiendo >= PARAMETROS.MAX_NO_ENTIENDO){
+    evento("derivado_a_docente", { bloque: PLAN[S.bloque].id, ejercicio: S.ej + 1 });
+    content.innerHTML = cabeceraBloque() + `<div class="note-card"><strong>Le aviso a tu seño</strong>Ella va a venir a ayudarte con este ejercicio. Mientras, seguimos con el próximo.</div><div class="actions"><button class="big primary" id="seguir">Seguir</button></div>`;
+    $("#seguir").onclick = () => siguienteEjercicio();
+    alEscuchar = s => { if (/segu|dale|listo/.test(s)) siguienteEjercicio(); };
+    pulsera("Aviso", "a tu seño", true);
+    decir("No pasa nada. Le voy a avisar a tu seño para que venga a ayudarte. Mientras, seguimos con el próximo.", null, null, "Le aviso a tu seño.");
+    return;
+  }
+  // nunca el mismo método dos veces seguidas: 1 = dibujo, 2 = paso a paso
+  S.modo = S.noEntiendo === 1 ? "dibujo" : "pasos"; S.paso = 0;
+  render();
+}
+function siguienteEjercicio(){
+  S.ej++; S.errores = 0; S.noEntiendo = 0; S.paso = 0; S.modo = "pregunta";
+  if (S.ej >= bloqueActual().ejercicios.length){
+    if (PLAN[S.bloque].id === "mate") tarea("t2_no_entiendo", "fin");
+    evento("bloque_fin", { bloque: PLAN[S.bloque].id });
+    S.hechos.push(PLAN[S.bloque].id); ir("finBloque"); return;
+  }
+  render();
+}
+function pFinBloque(){
+  const b = PLAN[S.bloque], sig = PLAN[S.bloque + 1], cierre = BLOQUES[b.id].cierre;
+  const antesDelRecreo = sig && sig.despuesRecreo && !b.despuesRecreo;
+  pulsera("¡Bien!", "bloque terminado", true);
+  let boton = sig ? "Siguiente: " + esc(sig.materia) : "Terminar el día";
+  if (antesDelRecreo) boton = "Ver qué cambió en mi camino";
+  content.innerHTML = `<div class="start"><div class="celebrate" aria-hidden="true">✓</div>
+    ${cierre ? `<div class="note-card group"><strong>${esc(cierre.titulo)}</strong>${esc(cierre.texto)}<div class="faces"><span style="background:#F3C98B">J</span><span style="background:#C9B6F2">S</span><span style="background:#A9D8C2">B</span></div></div>` : ""}
+    ${antesDelRecreo ? `<div class="note-card"><strong>Terminaste tus lecciones de la mañana</strong>Antes del recreo, Scan te muestra qué cambió.</div>` : ""}
+    <div class="choices"><button class="big primary" id="sigBloque">${boton}</button></div></div>`;
+  const seguir = () => {
+    S.bloque++;
+    if (antesDelRecreo){ desbloquear(1); irEtapa("camino"); }
+    else arrancarBloque();
+  };
+  $("#sigBloque").onclick = seguir;
+  alEscuchar = s => { if (/segu|siguiente|dale|listo|ver/.test(s)) seguir(); };
+  let dicho = `¡Terminaste ${b.materia}!`;
+  if (antesDelRecreo) dicho += " Terminaste tus lecciones de la mañana. Antes del recreo, mirá qué cambió en tu camino.";
+  else dicho += sig ? " Sigue " + sig.materia + "." : " Ese era el último bloque.";
+  decir(cierre ? dicho + " " + cierre.dicho : dicho, null, null, `¡Terminaste ${b.materia}!`);
+}
+function pFinDia(){
+  pulsera("¡Listo!", "hasta mañana", true);
+  content.innerHTML = `<div class="start"><div class="celebrate" aria-hidden="true">✓</div>
+    <div class="note-card"><strong>¡Terminaste por hoy!</strong>${S.hechos.length} de ${PLAN.length} bloques hechos. Mañana Scan arma tu día de nuevo.</div></div>`;
+  decir(`¡Terminaste por hoy, ${PARAMETROS.NOMBRE_ALUMNO}! Mañana Scan arma tu día de nuevo.`, null, null, "¡Terminaste por hoy!");
+}
+
+/* ===================== RECORRIDO GUIADO =====================
+   Lección → Mi camino → Mi perfil → Agenda → Recreo.
+   Cada etapa se desbloquea cuando el sistema termina de mostrar la anterior.
+   Las etapas ya vistas se pueden volver a abrir; las que vienen, no. */
+const ETAPAS = ["hoy", "camino", "perfil", "agenda", "recreo"];
+const NOMBRE_ETAPA = { hoy:"tu lección", camino:"tu camino", perfil:"tu perfil", agenda:"tu agenda", recreo:"el recreo" };
+function desbloquear(i){ if (i > S.desbloq){ S.desbloq = i; evento("desbloqueo", { etapa: ETAPAS[i] }); } pintarPasos(); }
+function pintarPasos(){
+  document.querySelectorAll(".steps [data-tab]").forEach(b => {
+    const i = ETAPAS.indexOf(b.dataset.tab), bloq = i > S.desbloq;
+    b.classList.toggle("locked", bloq);
+    b.classList.toggle("seen", !bloq && b.dataset.tab !== S.tab);
+    b.setAttribute("aria-disabled", String(bloq));
+    b.setAttribute("aria-current", b.dataset.tab === S.tab ? "step" : "false");
+  });
+}
+function irEtapa(t){
+  const i = ETAPAS.indexOf(t);
+  if (i > S.desbloq){
+    evento("etapa_bloqueada", { etapa: t });
+    decir(`Todavía no. Primero terminá ${NOMBRE_ETAPA[ETAPAS[S.desbloq]]}.`);
+    return;
+  }
+  S.tab = t; evento("etapa", { etapa: t }); alEscuchar = null; pararEscucha();
+  $("#stage").scrollTop = 0;
+  pintarPasos(); render();
+}
+document.querySelectorAll(".steps [data-tab]").forEach(b => b.onclick = () => irEtapa(b.dataset.tab));
+const cambiarTab = irEtapa;
+function botonSeguir(id, texto){ return `<div class="actions sticky"><button class="big primary" id="${id}">${texto}</button></div>`; }
+
+/* ---- Lo que cambió hoy (se arma con lo que hizo el alumno) ---- */
+function costoMate(){ return LOG.eventos.filter(e => e.tipo === "no_entiendo" && e.bloque === "mate").length; }
+function cambiosCamino(){
+  const c = costoMate() > 0;
+  return [
+    { rama:"mate", texto: c ? "Matemática: sumamos 2 bloques de fracciones por semana." : "Matemática: ¡avanzaste! Ya casi pasás a Decimales." },
+    { rama:"lengua", texto: "Lengua: terminaste Cuentos. Ahora sigue Leer en voz alta." },
+    { rama:"musica", texto: "Música queda en pausa desde hoy." }
+  ];
+}
+function cambiosPerfil(){
+  const animo = MOODS.find(m => m.nivel === S.animo);
+  const c = costoMate() > 0;
+  return [
+    { texto: `Ánimo de hoy: ${animo ? animo.label.toLowerCase() : "sin registrar"}` },
+    { texto: "Nuevo interés: cuentos de fútbol" },
+    { texto: c ? "Nuevo: las fracciones te cuestan un poco" : "Nuevo: las fracciones te salen bien" }
+  ];
+}
+
+/* ---- Mi camino ---- */
+let ramaSel = null;
+function pCamino(){
+  tarea("t3_camino_por_que", "inicio");
+  pulsera("Camino", "3 cambios");
+  if (S.hechos.includes("lengua")){ const l = RAMAS.find(r => r.id === "lengua"); l.actual = 1; }
+  const musica = RAMAS.find(r => r.id === "musica"); musica.desde = "hoy, 8 de noviembre";
+  const cambios = cambiosCamino(), nuevas = cambios.map(c => c.rama);
+  const fila = r => {
+    const pausa = r.estado === "pausa";
+    const nodos = r.tramos.map((t, i) => {
+      const cls = i < r.actual ? "hecho" : i === r.actual ? "actual" : "";
+      return `<span class="node ${cls}"><i></i><em>${esc(t)}</em></span>`;
+    }).join('<span class="link"></span>');
+    return `<button class="rama ${pausa ? "pausa" : ""} ${ramaSel === r.id ? "sel" : ""}" data-r="${r.id}">
+      <span class="rama-name">${esc(r.nombre)}<span class="chips"><span class="state ${pausa ? "off" : ""}">${pausa ? "En pausa" : "Activa"}</span>${nuevas.includes(r.id) ? '<span class="state new">Nuevo</span>' : ""}</span></span>
+      <span class="track">${nodos}</span></button>`;
+  };
+  const r = RAMAS.find(x => x.id === ramaSel);
+  let detalle = "";
+  if (r){
+    const pausa = r.estado === "pausa";
+    const txt = pausa
+      ? `${esc(r.nombre)} está en pausa desde ${esc(r.desde)}. Tu último tema fue ${esc(r.tramos[r.actual])}.`
+      : `Estás en ${esc(r.tramos[r.actual])}.${r.tramos[r.actual + 1] ? " Después viene " + esc(r.tramos[r.actual + 1]) + "." : ""}`;
+    detalle = `<div class="detail"><div><strong>${esc(r.nombre)}</strong><p>${txt}</p><p class="porque" id="porqueTxt" hidden></p></div><button class="why" id="porque">¿Por qué?</button></div>`;
+  }
+  content.innerHTML = `
+    <div class="updates"><h3>Lo nuevo en tu camino</h3><ul>${cambios.map(c => `<li>${esc(c.texto)}</li>`).join("")}</ul></div>
+    <div class="ramas">${RAMAS.map(fila).join("")}</div>${detalle}
+    ${S.desbloq <= 1 ? botonSeguir("seguirEtapa", "Seguir: mi perfil") : ""}`;
+  content.querySelectorAll("[data-r]").forEach(x => x.onclick = () => {
+    ramaSel = x.dataset.r; evento("rama", { rama: ramaSel }); pCamino();
+    const rr = RAMAS.find(y => y.id === ramaSel);
+    decir(rr.estado === "pausa" ? `${rr.nombre} está en pausa.` : `En ${rr.nombre} estás en ${rr.tramos[rr.actual]}.`);
+  });
+  const pq = $("#porque");
+  if (pq) pq.onclick = () => {
+    LOG.porQue++; evento("por_que", { rama: ramaSel });
+    if (r.estado === "pausa") tarea("t3_camino_por_que", "fin");
+    const t = $("#porqueTxt"); t.hidden = false; t.textContent = "Scan: " + PARAMETROS.TEXTO_POR_QUE;
+    decir(PARAMETROS.TEXTO_POR_QUE);
+  };
+  const sg = $("#seguirEtapa"); if (sg) sg.onclick = () => { desbloquear(2); irEtapa("perfil"); };
+  alEscuchar = s => { if (/segu|perfil|dale|listo/.test(s) && sg) sg.click(); };
+  if (!r) decir(`Mirá lo nuevo en tu camino. ${cambios.map(c => c.texto).join(" ")} Tocá una materia para ver más.`, null, null, "Lo nuevo en tu camino");
+}
+
+/* ---- Mi perfil Scan ---- */
+function pPerfil(){
+  pulsera("Perfil", "3 cambios");
+  const P = PERFIL, cambios = cambiosPerfil(), c = costoMate() > 0;
+  const barras = P.focoPorHora.map((x, i) => {
+    const h = 18 * x.v, top = x.v >= 4;
+    return `<g><rect x="${16 + i * 44}" y="${90 - h}" width="30" height="${h}" rx="6" fill="${top ? "#2F6BE0" : "#C9D8F6"}"/><text x="${31 + i * 44}" y="110" text-anchor="middle" font-size="13" fill="#5E6878">${x.h}</text></g>`;
+  }).join("");
+  const semana = P.animoSemana.concat(S.animo ? [{ d:"Hoy", v:S.animo, hoy:true }] : []);
+  const animo = semana.map(x => `<span class="day ${x.hoy ? "today" : ""}"><span class="dots ${x.v <= 2 ? "low" : ""}">${[1,2,3,4].map(k => `<b class="${k <= x.v ? "on" : ""}"></b>`).join("")}</span>${x.d}</span>`).join("");
+  const intereses = [{ t:"Cuentos de fútbol", n:1, nuevo:true }].concat(P.intereses);
+  const talentos = c ? P.talentos : P.talentos.concat(["Fracciones"]);
+  const cuesta = c ? ["Fracciones"].concat(P.cuesta) : P.cuesta;
+  content.innerHTML = `<div class="perfil">
+    <div class="updates wide2"><h3>Lo que cambió hoy en tu perfil</h3><ul>${cambios.map(x => `<li>${esc(x.texto)}</li>`).join("")}</ul></div>
+    <div class="pcard"><h3>Lo que más te sale</h3><div class="tags">${talentos.map(t => `<span class="tag strong ${t === "Fracciones" ? "is-new" : ""}">${esc(t)}</span>`).join("")}</div></div>
+    <div class="pcard"><h3>Lo que te gusta</h3><div class="tags">${intereses.map(t => `<span class="tag ${t.nuevo ? "is-new" : ""}">${esc(t.t)}<small>${t.nuevo ? "detectado hoy" : "visto en " + t.n + " actividades"}</small></span>`).join("")}</div></div>
+    <div class="pcard wide"><h3>Tu mejor hora</h3><p>Rendís más de 9 a 11. Ahí van tus bloques difíciles.</p><svg viewBox="0 0 370 118" role="img" aria-label="Foco por hora: más alto de 9 a 10">${barras}</svg></div>
+    <div class="pcard"><h3>Tu ánimo esta semana</h3><div class="week">${animo}</div></div>
+    <div class="pcard"><h3>Lo que te cuesta</h3><ul>${cuesta.map(t => `<li class="${t === "Fracciones" ? "is-new" : ""}">${esc(t)}</li>`).join("")}</ul></div>
+    <p class="pfoot"><span class="pulse"></span>Scan actualiza tu perfil todo el tiempo con tu pulsera.</p>
+  </div>${S.desbloq <= 2 ? botonSeguir("seguirEtapa", "Seguir: mi agenda") : ""}`;
+  const sg = $("#seguirEtapa"); if (sg) sg.onclick = () => { desbloquear(3); irEtapa("agenda"); };
+  alEscuchar = s => { if (/segu|agenda|dale|listo/.test(s) && sg) sg.click(); };
+  decir(`Esto cambió hoy en tu perfil. ${cambios.map(x => x.texto).join(". ")}.`, null, null, "Lo que cambió en tu perfil");
+}
+
+/* ---- Agenda ---- */
+function pAgenda(){
+  pulsera("Agenda", "10:00 recreo");
+  const cambios = AGENDA.filter(a => a.antes);
+  content.innerHTML = `
+    <div class="updates"><h3>Qué cambió en tu agenda</h3><ul>${cambios.map(a => `<li>${esc(a.h)} · ${esc(a.t)} <span class="was">(antes: ${esc(a.antes)})</span></li>`).join("")}</ul></div>
+    <ol class="agenda">${AGENDA.map(a => {
+      const hecho = a.bloque && S.hechos.includes(a.bloque);
+      const cls = hecho ? "done" : a.ahora ? "now" : a.antes ? "changed" : "";
+      return `<li class="${cls}"><span class="hora">${esc(a.h)}</span><span class="marca" aria-hidden="true"></span>
+        <span class="que"><strong>${esc(a.t)}</strong>${a.sub ? `<small>${esc(a.sub)}</small>` : ""}${a.antes ? `<small class="was">Antes: ${esc(a.antes)}</small>` : ""}</span>
+        ${a.ahora ? '<span class="state new">Ahora</span>' : hecho ? '<span class="state">Hecho</span>' : a.antes ? '<span class="state chg">Cambió</span>' : ""}</li>`;
+    }).join("")}</ol>
+    ${S.desbloq <= 3 ? botonSeguir("seguirEtapa", "Ir al recreo") : ""}`;
+  const sg = $("#seguirEtapa"); if (sg) sg.onclick = () => { desbloquear(4); irEtapa("recreo"); };
+  alEscuchar = s => { if (/recreo|segu|dale|listo/.test(s) && sg) sg.click(); };
+  decir(`Ahora tenés recreo. Después del recreo sigue Ciencias, en la huerta con Sofía y Bruno. Y a las 11, en vez de Música, vas a tener Matemática.`, null, null, "Qué sigue después del recreo");
+}
+
+/* ---- Recreo: chat con amigos ---- */
+const CHAT = { mensajes: [
+  { de:"Mati", c:"#F2B6A0", t:"¿Quién juega a la pelota en el recreo? ⚽" },
+  { de:"Sofía", c:"#C9B6F2", t:"Yo voy a la huerta a ver si salieron los tomates 🌱" }
+], scanDijo:false, respondido:{} };
+const RESPUESTAS_RAPIDAS = ["¡Yo juego a la pelota!", "Voy a la huerta", "¿Dónde nos vemos?"];
+function pRecreo(){
+  pulsera("Recreo", "20 min", true);
+  const burbuja = m => m.scan
+    ? `<div class="msg scan"><span class="pulse"></span>${esc(m.t)}</div>`
+    : `<div class="msg ${m.yo ? "me" : ""}">${m.yo ? "" : `<span class="who-dot" style="background:${m.c}">${esc(m.de[0])}</span>`}<div><b>${m.yo ? "" : esc(m.de)}</b><p>${esc(m.t)}</p></div></div>`;
+  content.innerHTML = `
+    <div class="suggest"><span class="pulse"></span><div><strong>Scan te sugiere</strong>Pasá el recreo con Sofía y Bruno: son tu grupo de la huerta.</div></div>
+    <div class="chat" id="chat"><div class="chat-head">Chat del grado · 4 amigos</div>${CHAT.mensajes.map(burbuja).join("")}</div>
+    <div class="quick">${RESPUESTAS_RAPIDAS.map((q, i) => `<button class="qr" data-q="${i}">${esc(q)}</button>`).join("")}</div>
+    <form class="compose" id="compose"><label for="chatIn" class="sr">Escribí un mensaje</label><input id="chatIn" autocomplete="off" placeholder="Escribí un mensaje…"><button class="send" aria-label="Enviar">Enviar</button></form>
+    <div class="actions">${micHTML("Mantené apretado y dictá")}<button class="big ghost" id="finRecreo">Terminó el recreo</button></div>`;
+  const ch = $("#chat"); ch.scrollTop = ch.scrollHeight;
+  content.querySelectorAll("[data-q]").forEach(b => b.onclick = () => enviar(RESPUESTAS_RAPIDAS[Number(b.dataset.q)]));
+  $("#compose").onsubmit = e => { e.preventDefault(); const v = $("#chatIn").value.trim(); if (v) enviar(v); };
+  $("#finRecreo").onclick = () => { evento("fin_recreo"); S.tab = "hoy"; S.bloque = PLAN.findIndex(p => p.despuesRecreo); pintarPasos(); arrancarBloque(); };
+  conectarMic();
+  alEscuchar = s => enviar(s);
+  if (!CHAT.saludo){ CHAT.saludo = true; decir(`¡Recreo! Tenés 20 minutos. ¿Con quién te encontrás?`, null, null, "¡Recreo! 20 minutos"); }
+  else caption.textContent = "¡Recreo! 20 minutos";
+}
+function enviar(texto){
+  evento("chat", { texto });
+  CHAT.mensajes.push({ yo:true, t:texto });
+  const s = texto.toLowerCase(), r = [];
+  if (/pelota|jug|cancha|f[uú]tbol/.test(s)) r.push({ de:"Mati", c:"#F2B6A0", t:"¡Vamos! Cancha 2 😎" });
+  else if (/huerta|planta|tomate/.test(s)) r.push({ de:"Sofía", c:"#C9B6F2", t:"¡Sí! Te espero en la huerta 🌱" }, { de:"Bruno", c:"#A9D8C2", t:"Voy también" });
+  else if (/d[oó]nde/.test(s)) r.push({ de:"Bruno", c:"#A9D8C2", t:"En el patio de atrás, al lado de la huerta" });
+  else r.push({ de:"Sofía", c:"#C9B6F2", t:"😄" });
+  pRecreo();
+  setTimeout(() => {
+    CHAT.mensajes.push(...r);
+    if (!CHAT.scanDijo){ CHAT.scanDijo = true; CHAT.mensajes.push({ scan:true, t:"Scan anotó con quién vas a pasar el recreo." }); }
+    if (S.tab === "recreo") pRecreo();
+  }, 900);
+}
+/* ===================== DIBUJOS ===================== */
+function barraPartido(){
+  return `<svg viewBox="0 0 640 170" role="img" aria-label="90 minutos divididos en 3 partes de 30">
+    <text x="320" y="24" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="20" fill="#1F2733">Un partido = 90 minutos</text>
+    <rect x="20" y="44" width="600" height="70" rx="16" fill="#E3F2EA"/>
+    <rect x="20" y="44" width="200" height="70" rx="16" fill="#2F6BE0"/>
+    <line x1="220" y1="40" x2="220" y2="118" stroke="#1F2733" stroke-width="3" stroke-dasharray="6 5"/>
+    <line x1="420" y1="40" x2="420" y2="118" stroke="#1F2733" stroke-width="3" stroke-dasharray="6 5"/>
+    <text x="120" y="88" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="24" fill="#fff">Joaquín</text>
+    <text x="320" y="88" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="22" fill="#2E9E6B">parte 2</text>
+    <text x="520" y="88" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="22" fill="#2E9E6B">parte 3</text>
+    <text x="120" y="148" text-anchor="middle" font-family="Atkinson Hyperlegible, sans-serif" font-size="20" fill="#1F2733">30 min</text>
+    <text x="320" y="148" text-anchor="middle" font-family="Atkinson Hyperlegible, sans-serif" font-size="20" fill="#5E6878">30 min</text>
+    <text x="520" y="148" text-anchor="middle" font-family="Atkinson Hyperlegible, sans-serif" font-size="20" fill="#5E6878">30 min</text>
+  </svg>`;
+}
+function pelotas(){
+  let g = "";
+  for (let grupo = 0; grupo < 4; grupo++){
+    const x0 = 20 + grupo * 155, del9 = grupo < 3;
+    g += `<rect x="${x0}" y="40" width="140" height="80" rx="18" fill="${del9 ? "#DCE7FB" : "#F1ECE2"}" stroke="${del9 ? "#2F6BE0" : "#D9D2C4"}" stroke-width="2"/>`;
+    for (let i = 0; i < 3; i++){
+      const cx = x0 + 32 + i * 38;
+      g += `<circle cx="${cx}" cy="80" r="15" fill="#fff" stroke="#1F2733" stroke-width="2"/><path d="M${cx - 6} ${80 - 4} l6 -4 6 4 -2 7 h-8z" fill="#1F2733"/>`;
+    }
+    g += `<text x="${x0 + 70}" y="146" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="18" fill="${del9 ? "#2F6BE0" : "#5E6878"}">${del9 ? "del 9" : "otros"}</text>`;
+  }
+  return `<svg viewBox="0 0 640 165" role="img" aria-label="12 goles en 4 grupos de 3; 3 grupos son del 9">
+    <text x="320" y="24" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="20" fill="#1F2733">12 goles en 4 grupos iguales</text>${g}</svg>`;
+}
+
+const F_D = 'font-family="Fredoka, sans-serif"', F_B = 'font-family="Atkinson Hyperlegible, sans-serif"';
+function persona(x, y, color, brazosArriba){
+  const brazos = brazosArriba
+    ? `<path d="M${x - 14} ${y + 22} l-12 -22 M${x + 14} ${y + 22} l12 -22" stroke="#1F2733" stroke-width="5" stroke-linecap="round"/>`
+    : `<path d="M${x - 14} ${y + 24} l-14 18 M${x + 14} ${y + 24} l14 18" stroke="#1F2733" stroke-width="5" stroke-linecap="round"/>`;
+  return `${brazos}<rect x="${x - 15}" y="${y + 16}" width="30" height="40" rx="10" fill="${color}"/><circle cx="${x}" cy="${y}" r="14" fill="#F3C98B"/>
+    <path d="M${x - 8} ${y + 56} v24 M${x + 8} ${y + 56} v24" stroke="#1F2733" stroke-width="6" stroke-linecap="round"/>`;
+}
+function botinVolando(){
+  return `<svg viewBox="0 0 640 220" role="img" aria-label="A Lucía se le sale el botín al patear un penal">
+    <text x="320" y="26" text-anchor="middle" ${F_D} font-size="20" fill="#1F2733">Una vez, en un penal…</text>
+    <rect x="20" y="186" width="600" height="14" rx="7" fill="#BFE3CF"/>
+    ${persona(170, 80, "#2F6BE0", false)}
+    <circle cx="232" cy="172" r="15" fill="#fff" stroke="#1F2733" stroke-width="2.5"/>
+    <path d="M300 110 q60 -70 130 -40" fill="none" stroke="#9AA6B8" stroke-width="3" stroke-dasharray="7 7"/>
+    <path d="M430 60 h52 a10 10 0 0 1 10 10 v14 h-74 v-12 a12 12 0 0 1 12 -12z" fill="#D64545"/>
+    <path d="M422 84 h70 v8 h-70z" fill="#1F2733"/>
+    <text x="458" y="126" text-anchor="middle" ${F_B} font-size="18" fill="#1F2733">¡se le salió el botín!</text>
+    <text x="458" y="170" text-anchor="middle" ${F_D} font-size="18" fill="#2F6BE0">Por eso: cordones dos veces</text>
+  </svg>`;
+}
+function enAndas(){
+  return `<svg viewBox="0 0 640 240" role="img" aria-label="Los compañeros levantan a Lucía en andas">
+    <text x="320" y="26" text-anchor="middle" ${F_D} font-size="20" fill="#1F2733">La levantaron en andas</text>
+    <rect x="20" y="214" width="600" height="14" rx="7" fill="#BFE3CF"/>
+    ${persona(250, 130, "#E3A33A", true)}${persona(390, 130, "#E3A33A", true)}
+    <rect x="262" y="96" width="116" height="16" rx="8" fill="#2F6BE0"/>
+    ${persona(320, 46, "#2F6BE0", true)}
+    <text x="120" y="120" text-anchor="middle" ${F_D} font-size="26" fill="#2E9E6B">¡Bien!</text>
+    <text x="530" y="120" text-anchor="middle" ${F_D} font-size="26" fill="#2E9E6B">¡Campeones!</text>
+  </svg>`;
+}
+function plantaPartes(){
+  return `<svg viewBox="0 0 640 260" role="img" aria-label="Partes de la planta: flor, hojas y raíz bajo tierra">
+    <rect x="20" y="150" width="600" height="96" rx="14" fill="#E8D9C2"/>
+    <text x="40" y="236" ${F_B} font-size="16" fill="#7A5A2E">tierra</text>
+    <path d="M320 150 V70" stroke="#2E9E6B" stroke-width="7" stroke-linecap="round"/>
+    <path d="M320 112 q-50 -6 -62 -34 q40 2 62 34z M320 100 q48 -8 62 -36 q-42 2 -62 36z" fill="#53B784"/>
+    <circle cx="320" cy="56" r="20" fill="#F2B544"/><circle cx="320" cy="56" r="8" fill="#D9822B"/>
+    <path d="M320 150 q-6 30 -40 56 M320 150 q8 34 44 52 M320 150 v62 M300 178 q-20 6 -30 22 M340 182 q18 4 26 20" stroke="#2F6BE0" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M232 196 q4 -10 8 0 a4 4 0 0 1 -8 0z M408 210 q4 -10 8 0 a4 4 0 0 1 -8 0z M268 228 q4 -10 8 0 a4 4 0 0 1 -8 0z" fill="#5B8CF0"/>
+    <text x="430" y="62" ${F_B} font-size="18" fill="#1F2733">flor</text><path d="M424 56 h-76" stroke="#9AA6B8" stroke-width="2"/>
+    <text x="430" y="100" ${F_B} font-size="18" fill="#1F2733">hojas</text><path d="M424 94 h-40" stroke="#9AA6B8" stroke-width="2"/>
+    <text x="440" y="186" ${F_D} font-size="22" fill="#2F6BE0">raíz: toma el agua</text><path d="M434 180 h-60" stroke="#2F6BE0" stroke-width="2"/>
+  </svg>`;
+}
+function dosPlantas(){
+  const planta = (x, verde, lbl, sub) => `
+    <rect x="${x - 34}" y="170" width="68" height="44" rx="8" fill="#C98B5A"/>
+    <path d="M${x} 170 V${verde ? 96 : 122}" stroke="${verde ? "#2E9E6B" : "#B9A36A"}" stroke-width="6" stroke-linecap="round"/>
+    <path d="M${x} ${verde ? 130 : 146} q-40 -4 -48 -28 q34 0 48 28z M${x} ${verde ? 118 : 140} q38 -6 48 -30 q-34 2 -48 30z" fill="${verde ? "#53B784" : "#D9C77E"}"/>
+    <text x="${x}" y="238" text-anchor="middle" ${F_D} font-size="19" fill="#1F2733">${lbl}</text>
+    <text x="${x}" y="258" text-anchor="middle" ${F_B} font-size="15" fill="#5E6878">${sub}</text>`;
+  return `<svg viewBox="0 0 640 270" role="img" aria-label="Una planta al sol está verde; una en el placard está amarilla">
+    <rect x="40" y="20" width="250" height="200" rx="16" fill="#FFF3D1"/>
+    <circle cx="250" cy="56" r="22" fill="#F2B544"/>
+    <path d="M250 22 v-8 M250 98 v8 M216 56 h-8 M284 56 h8" stroke="#F2B544" stroke-width="4" stroke-linecap="round"/>
+    <rect x="350" y="20" width="250" height="200" rx="16" fill="#3A4252"/>
+    <rect x="368" y="34" width="214" height="172" rx="10" fill="#232A35"/>
+    ${planta(165, true, "En la ventana", "verde, con sol")}
+    ${planta(475, false, "En el placard", "amarilla, sin luz")}
+  </svg>`;
+}
+
+/* ===================== NOTAS DE PRUEBA ===================== */
+const fb = $("#fb");
+function abrirNotas(){
+  fb.classList.add("open");
+  $("#fbMeta").textContent = "Pantalla: " + (S.tab === "hoy" ? S.pantalla : S.tab) + " · " + new Date().toLocaleTimeString("es-AR");
+  $("#fbCount").textContent = LOG.notas.length + " notas guardadas en este navegador";
+  setTimeout(() => $("#fbText").focus(), 30);
+}
+$("#fbBtn").onclick = () => fb.classList.contains("open") ? fb.classList.remove("open") : abrirNotas();
+$("#fbClose").onclick = () => fb.classList.remove("open");
+$("#fbSave").onclick = () => {
+  const t = $("#fbText").value.trim(); if (!t) return;
+  LOG.notas.push({ t: new Date().toISOString(), pantalla: S.tab === "hoy" ? S.pantalla : S.tab, modo: S.modo || null, ejercicio: S.ej + 1, texto: t });
+  guardarLog(); $("#fbText").value = "";
+  $("#fbCount").textContent = LOG.notas.length + " notas guardadas en este navegador";
+};
+$("#fbCopy").onclick = async () => {
+  const txt = JSON.stringify(LOG, null, 2);
+  try { await navigator.clipboard.writeText(txt); $("#fbCount").textContent = "JSON copiado. Pegalo en un archivo de la carpeta feedback/."; }
+  catch(e){ $("#fbText").value = txt; $("#fbText").select(); $("#fbCount").textContent = "No se pudo copiar solo: el JSON quedó en el cuadro, copialo a mano."; }
+};
+
+/* ===================== TECLADO ===================== */
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "TEXTAREA") return;
+  if (e.key === "R" && e.shiftKey){ try { localStorage.removeItem(LOG_KEY); } catch(_){}; location.reload(); return; }
+  const k = e.key.toLowerCase();
+  if (k === "f"){ e.preventDefault(); abrirNotas(); return; }
+  if (k === "r"){ repetir(); return; }
+  if (k === "n"){ noEntiendo("teclado"); return; }
+  if (e.code === "Space" && !e.repeat && !modoReal() && S.micOk && $("#mic") && !$("#mic").disabled){ e.preventDefault(); empezarEscucha(); return; }
+  if (S.pantalla === "checkin" && S.tab === "hoy" && /^[1-4]$/.test(k)){ LOG.usoBotones++; elegirAnimo(MOODS[Number(k) - 1].id); return; }
+  if (S.pantalla === "bloque" && S.tab === "hoy" && /^[1-3]$/.test(k)){ const b = boton(Number(k) - 1); if (b) b.click(); }
+});
+document.addEventListener("keyup", e => { if (e.code === "Space" && S.escuchando){ try { S.recon.stop(); } catch(_){} } });
+$("#repeatBtn").onclick = repetir;
+$("#voiceToggle").onclick = () => {
+  PARAMETROS.VOZ_ACTIVA = !PARAMETROS.VOZ_ACTIVA;
+  $("#voiceToggle").setAttribute("aria-pressed", String(PARAMETROS.VOZ_ACTIVA));
+  if (!PARAMETROS.VOZ_ACTIVA) try { speechSynthesis.cancel(); } catch(_){}
+  try { IA.conv && IA.conv.setVolume({ volume: PARAMETROS.VOZ_ACTIVA ? 1 : 0 }); } catch(_){}
+};
+
+
+/* ===================== MODO DE VOZ: PANEL ===================== */
+document.querySelectorAll("[name=modo]").forEach(r => r.onchange = async () => {
+  CFG.modo = r.value; guardarCfg(); evento("modo", { modo: CFG.modo });
+  if (CFG.modo === "testing"){ terminarIA(); IA.estado = "apagado"; IA.error = ""; }
+  pintarModo();
+  if (CFG.modo === "real" && S.pantalla !== "inicio") { await conectarIA(); render(); }
+});
+$("#agentId").oninput = e => { CFG.agentId = e.target.value.trim(); guardarCfg(); };
+$("#iaConectar").onclick = async () => { CFG.modo = "real"; guardarCfg(); pintarModo(); await conectarIA(); if (S.pantalla !== "inicio") render(); };
+pintarModo();
+
+/* ===================== ARRANQUE ===================== */
+$("#whoName").textContent = PARAMETROS.NOMBRE_ALUMNO;
+$("#avatarInitial").textContent = PARAMETROS.NOMBRE_ALUMNO[0];
+pintarLectura();
+pintarPasos();
+render();
+</script>
+</body>
+</html>
