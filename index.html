@@ -23,6 +23,7 @@
   Cambios por versión
     v0.1 (2/11/2026): check-in con voz, respiración, plan del día, bloque de Matemática (fracciones)
                       con "No entiendo" y 3 métodos, indicador Scan, vista de pulsera, notas de prueba.
+    v0.4.4 (9/11/2026): prueba también por WebSocket; botón "Diagnosticar conexión" en el panel F.
     v0.4.3 (9/11/2026): si ElevenLabs rechaza el guion de la app (overrides), reintenta con el del panel.
     v0.4.2 (9/11/2026): el Agent ID de Miseño viene cargado; para el modo real alcanza con elegir "Real".
     v0.4.1 (9/11/2026): el tutor de IA se llama Miseño (guion del modo real).
@@ -378,6 +379,7 @@ li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
 .fb .modo{flex-direction:column;gap:6px}
 .fb .modo label{display:flex;gap:8px;align-items:center}
 .fb{max-height:calc(100vh - 110px);overflow:auto}
+.diag{max-height:220px;overflow:auto;background:#1F2733;color:#E8EEF8;border-radius:10px;padding:10px;font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre-wrap;margin:0}
 .fb-input{border:1px solid #D9D2C4;border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;width:100%}
 @media (max-width:900px){
   .main{grid-template-columns:1fr}
@@ -477,6 +479,8 @@ li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
   <input id="agentId" class="fb-input" placeholder="agent_…" autocomplete="off">
   <div class="row"><button id="iaConectar">Conectar ahora</button></div>
   <div class="meta" id="iaEstado"></div>
+  <div class="row"><button id="iaDiagBtn">Diagnosticar conexión</button><button id="iaDiagCopy">Copiar diagnóstico</button></div>
+  <pre class="diag" id="iaDiag" hidden></pre>
 </div>
 
 <script>
@@ -780,6 +784,7 @@ function pintarModo(){
 function opcionesSesion(){
   return {
     clientTools: HERRAMIENTAS,
+    onConnect: () => {},
     onModeChange: ({ mode }) => {
       const wrap = $("#orbWrap");
       if (mode === "speaking"){ IA.hablando = true; clearTimeout(IA.timerSeguro); wrap.classList.add("speaking"); wrap.classList.remove("listening"); }
@@ -794,13 +799,13 @@ function opcionesSesion(){
   };
 }
 // Un intento de conexión: vale si la sesión sigue viva 2,5 s después de abrirse.
-function intentarSesion(Conversation, conOverrides){
+function intentarSesion(Conversation, conOverrides, tipo){
   return new Promise(async resuelve => {
     let listo = false, conv = null;
     const fin = ok => { if (listo) return; listo = true; if (!ok && conv){ try { conv.endSession(); } catch(e){} } resuelve(ok ? conv : null); };
     const textoError = x => String((x && (x.message || x.reason || (x.closeReason))) || x || "error desconocido");
-    const opciones = Object.assign({ agentId: CFG.agentId }, opcionesSesion(), {
-      onError: e => { IA.error = textoError(e); evento("ia_error", { error: IA.error, conOverrides }); if (!listo) fin(false); else pintarModo(); },
+    const opciones = Object.assign({ agentId: CFG.agentId, connectionType: tipo || "webrtc" }, opcionesSesion(), {
+      onError: (e, ctx) => { IA.error = textoError(e) + (ctx ? " · " + jsonCorto(ctx) : ""); evento("ia_error", { error: IA.error, conOverrides, tipo }); if (!listo) fin(false); else pintarModo(); },
       onDisconnect: d => {
         if (!listo){ if (d) IA.error = IA.error || textoError(d); fin(false); return; }
         const era = IA.estado; IA.estado = "apagado"; IA.conv = null; pintarModo(); if (era === "conectado") evento("ia_desconectada", { detalle: textoError(d) });
@@ -821,13 +826,16 @@ async function conectarIA(){
   try { ({ Conversation } = await cargarSDK()); }
   catch(e){ IA.estado = "error"; IA.error = e.message; evento("ia_fallo_conexion", { error: IA.error }); pintarModo(); return false; }
   // 1) con el guion de la app; 2) si ElevenLabs rechaza los overrides, con el guion cargado en el panel del agente
-  let conv = await intentarSesion(Conversation, true);
-  if (!conv){
-    evento("ia_reintento_sin_overrides", { error: IA.error });
-    const primerError = IA.error; IA.error = "";
-    conv = await intentarSesion(Conversation, false);
-    if (conv) IA.sinOverrides = true; else IA.error = IA.error || primerError;
+  // Prueba en orden: WebRTC con guion, WebRTC sin guion, WebSocket con guion, WebSocket sin guion.
+  let conv = null, primerError = "";
+  for (const [tipo, ov] of [["webrtc", true], ["webrtc", false], ["websocket", true], ["websocket", false]]){
+    IA.error = "";
+    conv = await intentarSesion(Conversation, ov, tipo);
+    if (conv){ IA.sinOverrides = !ov; IA.tipo = tipo; break; }
+    primerError = primerError || IA.error;
+    evento("ia_reintento", { tipo, conOverrides: ov, error: IA.error });
   }
+  if (!conv) IA.error = IA.error || primerError;
   if (!conv){ IA.estado = "error"; IA.conv = null; evento("ia_fallo_conexion", { error: IA.error }); pintarModo(); return false; }
   IA.conv = conv; IA.estado = "conectado"; IA.error = ""; evento("ia_conectada", { sinOverrides: IA.sinOverrides }); pintarModo();
   return true;
@@ -883,6 +891,54 @@ const HERRAMIENTAS = {
     return "Ya le avisaste a la maestra. Decile con cariño, en una oración, que su maestra va a venir a acompañarlo, y volvé a la actividad.";
   })
 };
+
+/* ---- Diagnóstico de la conexión (panel F) ---- */
+function jsonCorto(x){
+  try {
+    if (x instanceof Error) return x.name + ": " + x.message;
+    if (typeof x !== "object" || x === null) return String(x);
+    return JSON.stringify(x, (k, v) => v instanceof Error ? v.name + ": " + v.message : v).slice(0, 600);
+  } catch(e){ return String(x); }
+}
+async function diagnosticoIA(){
+  const box = $("#iaDiag"); box.hidden = false; const lineas = [];
+  const log = t => { lineas.push(t); box.textContent = lineas.join("\n"); box.scrollTop = box.scrollHeight; };
+  terminarIA(); IA.estado = "apagado"; pintarModo();
+  log("Agent ID: " + CFG.agentId);
+  log("Página: " + location.protocol + "//" + location.host + (window.isSecureContext ? " (segura)" : " (NO segura: el micrófono no va a andar)"));
+  try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach(t => t.stop()); log("Micrófono: OK"); }
+  catch(e){ log("Micrófono: FALLA · " + jsonCorto(e)); }
+  let Conversation;
+  try { ({ Conversation } = await cargarSDK()); log("SDK de ElevenLabs: cargado (" + SDK_ELEVENLABS.split("@").pop().split("/")[0] + ")"); }
+  catch(e){ log("SDK de ElevenLabs: FALLA · " + jsonCorto(e)); return; }
+  const casos = [["webrtc", true], ["webrtc", false], ["websocket", true], ["websocket", false]];
+  for (const [tipo, ov] of casos){
+    log("");
+    log(`— Prueba ${tipo.toUpperCase()} ${ov ? "con" : "sin"} guion de la app —`);
+    const t0 = performance.now(), ms = () => Math.round(performance.now() - t0) + " ms";
+    let conectado = false, cayo = false, conv = null;
+    const op = {
+      agentId: CFG.agentId, connectionType: tipo, clientTools: HERRAMIENTAS,
+      onStatusChange: x => log(ms() + " estado: " + jsonCorto(x && x.status || x)),
+      onConnect: x => { conectado = true; log(ms() + " conectó " + jsonCorto(x)); },
+      onError: (m, ctx) => log(ms() + " ERROR: " + jsonCorto(m) + (ctx ? " · contexto: " + jsonCorto(ctx) : "")),
+      onDisconnect: d => { cayo = true; log(ms() + " se desconectó: " + jsonCorto(d)); },
+      onMessage: m => log(ms() + " mensaje (" + (m.role || m.source) + "): " + String(m.message).slice(0, 80)),
+      onDebug: d => log(ms() + " debug: " + jsonCorto(d).slice(0, 200)),
+      onIncomingEvent: ev => { if (ev && /error|interrupt|initiation/i.test(ev.type || "")) log(ms() + " evento: " + jsonCorto(ev).slice(0, 300)); }
+    };
+    if (ov) op.overrides = { agent: { prompt: { prompt: PROMPT_TUTOR() }, firstMessage: "", language: "es" } };
+    try { conv = await Conversation.startSession(op); log(ms() + " startSession terminó"); }
+    catch(e){ log(ms() + " startSession FALLÓ: " + jsonCorto(e)); }
+    await new Promise(r => setTimeout(r, 4000));
+    log(conectado && !cayo ? "RESULTADO: anda ✔" : "RESULTADO: no anda ✘");
+    try { conv && conv.endSession(); } catch(e){}
+    await new Promise(r => setTimeout(r, 800));
+  }
+  log(""); log("Listo. Tocá “Copiar diagnóstico” y pegáselo a Claude.");
+  LOG.diagnostico = lineas.slice(); guardarLog();
+}
+
 function terminarIA(){ try { IA.conv && IA.conv.endSession(); } catch(e){} }
 window.addEventListener("pagehide", terminarIA);
 
@@ -1590,6 +1646,8 @@ document.querySelectorAll("[name=modo]").forEach(r => r.onchange = async () => {
   if (CFG.modo === "real" && S.pantalla !== "inicio") { await conectarIA(); render(); }
 });
 $("#agentId").oninput = e => { CFG.agentId = e.target.value.trim(); guardarCfg(); };
+$("#iaDiagBtn").onclick = () => diagnosticoIA();
+$("#iaDiagCopy").onclick = async () => { const t = $("#iaDiag").textContent; try { await navigator.clipboard.writeText(t); $("#iaEstado").textContent = "Diagnóstico copiado."; } catch(e){ const r = document.createRange(); r.selectNodeContents($("#iaDiag")); getSelection().removeAllRanges(); getSelection().addRange(r); $("#iaEstado").textContent = "Copialo a mano: ya quedó seleccionado."; } };
 $("#iaConectar").onclick = async () => { CFG.modo = "real"; guardarCfg(); pintarModo(); await conectarIA(); if (S.pantalla !== "inicio") render(); };
 pintarModo();
 

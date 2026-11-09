@@ -32,6 +32,7 @@ Settings → Pages → *Deploy from a branch* → `main` / `(root)`. La página 
 
 ## Versiones
 
+- **v0.4.4:** también prueba por WebSocket; botón "Diagnosticar conexión" en el panel F.
 - **v0.4.3:** si ElevenLabs rechaza el guion de la app, usa el del panel del agente.
 - **v0.4.1:** el tutor de IA se llama Miseño.
 - **v0.4:** modo real con IA de voz (ElevenLabs) y modo testing.
