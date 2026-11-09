@@ -23,6 +23,7 @@
   Cambios por versión
     v0.1 (2/11/2026): check-in con voz, respiración, plan del día, bloque de Matemática (fracciones)
                       con "No entiendo" y 3 métodos, indicador Scan, vista de pulsera, notas de prueba.
+    v0.4.3 (9/11/2026): si ElevenLabs rechaza el guion de la app (overrides), reintenta con el del panel.
     v0.4.2 (9/11/2026): el Agent ID de Miseño viene cargado; para el modo real alcanza con elegir "Real".
     v0.4.1 (9/11/2026): el tutor de IA se llama Miseño (guion del modo real).
     v0.4 (9/11/2026): modo real con IA de voz (agente de ElevenLabs que habla, escucha y mueve la app con
@@ -772,43 +773,64 @@ function pintarModo(){
     chip.className = "modo-chip " + (!real ? "test" : IA.estado === "conectado" ? "real" : "warn");
   }
   const st = $("#iaEstado");
-  if (st) st.textContent = !real ? "Voz robótica del navegador. No gasta créditos." : IA.estado === "conectado" ? "Conectado al agente de ElevenLabs." : IA.estado === "conectando" ? "Conectando…" : IA.error ? "No conectó: " + IA.error + ". Se usa la voz robótica." : "Se conecta al tocar “Tocá para empezar”.";
+  if (st) st.textContent = !real ? "Voz robótica del navegador. No gasta créditos." : IA.estado === "conectado" ? (IA.sinOverrides ? "Conectado, usando el guion cargado en el panel de ElevenLabs." : "Conectado al agente de ElevenLabs.") : IA.estado === "conectando" ? "Conectando…" : IA.error ? "No conectó: " + IA.error + ". Se usa la voz robótica." : "Se conecta al tocar “Tocá para empezar”.";
   document.querySelectorAll("[name=modo]").forEach(r => r.checked = r.value === CFG.modo);
   const inp = $("#agentId"); if (inp && document.activeElement !== inp) inp.value = CFG.agentId;
+}
+function opcionesSesion(){
+  return {
+    clientTools: HERRAMIENTAS,
+    onModeChange: ({ mode }) => {
+      const wrap = $("#orbWrap");
+      if (mode === "speaking"){ IA.hablando = true; clearTimeout(IA.timerSeguro); wrap.classList.add("speaking"); wrap.classList.remove("listening"); }
+      else { const habia = IA.hablando; IA.hablando = false; wrap.classList.remove("speaking"); wrap.classList.add("listening"); if (habia) correrPendiente(); }
+    },
+    onMessage: m => {
+      const rol = m.role || (m.source === "ai" ? "agent" : "user");
+      LOG.conversacion = LOG.conversacion || []; LOG.conversacion.push({ t: new Date().toISOString(), rol, texto: m.message }); guardarLog();
+      if (rol === "agent") caption.textContent = m.message;
+      else { const h = $("#heard"); if (h) h.textContent = "Te escuché: “" + m.message + "”"; }
+    }
+  };
+}
+// Un intento de conexión: vale si la sesión sigue viva 2,5 s después de abrirse.
+function intentarSesion(Conversation, conOverrides){
+  return new Promise(async resuelve => {
+    let listo = false, conv = null;
+    const fin = ok => { if (listo) return; listo = true; if (!ok && conv){ try { conv.endSession(); } catch(e){} } resuelve(ok ? conv : null); };
+    const textoError = x => String((x && (x.message || x.reason || (x.closeReason))) || x || "error desconocido");
+    const opciones = Object.assign({ agentId: CFG.agentId }, opcionesSesion(), {
+      onError: e => { IA.error = textoError(e); evento("ia_error", { error: IA.error, conOverrides }); if (!listo) fin(false); else pintarModo(); },
+      onDisconnect: d => {
+        if (!listo){ if (d) IA.error = IA.error || textoError(d); fin(false); return; }
+        const era = IA.estado; IA.estado = "apagado"; IA.conv = null; pintarModo(); if (era === "conectado") evento("ia_desconectada", { detalle: textoError(d) });
+      }
+    });
+    if (conOverrides) opciones.overrides = { agent: { prompt: { prompt: PROMPT_TUTOR() }, firstMessage: "", language: "es" } };
+    try { conv = await Conversation.startSession(opciones); }
+    catch(e){ IA.error = textoError(e); return fin(false); }
+    setTimeout(() => fin(true), 2500);
+  });
 }
 async function conectarIA(){
   if (CFG.modo !== "real") return false;
   if (!CFG.agentId){ IA.error = "falta el Agent ID"; IA.estado = "error"; pintarModo(); return false; }
-  IA.estado = "conectando"; IA.error = ""; pintarModo();
-  caption.textContent = "Conectando con Scan…";
-  try {
-    const { Conversation } = await cargarSDK();
-    IA.conv = await Conversation.startSession({
-      agentId: CFG.agentId,
-      overrides: { agent: { prompt: { prompt: PROMPT_TUTOR() }, firstMessage: "", language: "es" } },
-      clientTools: HERRAMIENTAS,
-      onConnect: () => { IA.estado = "conectado"; pintarModo(); evento("ia_conectada"); },
-      onDisconnect: () => { const era = IA.estado; IA.estado = "apagado"; IA.conv = null; pintarModo(); if (era === "conectado") evento("ia_desconectada"); },
-      onError: e => { IA.error = String((e && e.message) || e); evento("ia_error", { error: IA.error }); pintarModo(); },
-      onModeChange: ({ mode }) => {
-        const wrap = $("#orbWrap");
-        if (mode === "speaking"){ IA.hablando = true; clearTimeout(IA.timerSeguro); wrap.classList.add("speaking"); wrap.classList.remove("listening"); }
-        else { const habia = IA.hablando; IA.hablando = false; wrap.classList.remove("speaking"); wrap.classList.add("listening"); if (habia) correrPendiente(); }
-      },
-      onMessage: m => {
-        const rol = m.role || (m.source === "ai" ? "agent" : "user");
-        LOG.conversacion = LOG.conversacion || []; LOG.conversacion.push({ t: new Date().toISOString(), rol, texto: m.message }); guardarLog();
-        if (rol === "agent") caption.textContent = m.message;
-        else { const h = $("#heard"); if (h) h.textContent = "Te escuché: “" + m.message + "”"; }
-      }
-    });
-    IA.estado = "conectado"; pintarModo();
-    return true;
-  } catch(e){
-    IA.estado = "error"; IA.error = (e && e.message) || "error de conexión"; IA.conv = null;
-    evento("ia_fallo_conexion", { error: IA.error }); pintarModo();
-    return false;
+  IA.estado = "conectando"; IA.error = ""; IA.sinOverrides = false; pintarModo();
+  caption.textContent = "Conectando con Miseño…";
+  let Conversation;
+  try { ({ Conversation } = await cargarSDK()); }
+  catch(e){ IA.estado = "error"; IA.error = e.message; evento("ia_fallo_conexion", { error: IA.error }); pintarModo(); return false; }
+  // 1) con el guion de la app; 2) si ElevenLabs rechaza los overrides, con el guion cargado en el panel del agente
+  let conv = await intentarSesion(Conversation, true);
+  if (!conv){
+    evento("ia_reintento_sin_overrides", { error: IA.error });
+    const primerError = IA.error; IA.error = "";
+    conv = await intentarSesion(Conversation, false);
+    if (conv) IA.sinOverrides = true; else IA.error = IA.error || primerError;
   }
+  if (!conv){ IA.estado = "error"; IA.conv = null; evento("ia_fallo_conexion", { error: IA.error }); pintarModo(); return false; }
+  IA.conv = conv; IA.estado = "conectado"; IA.error = ""; evento("ia_conectada", { sinOverrides: IA.sinOverrides }); pintarModo();
+  return true;
 }
 function correrPendiente(){ const cb = IA.pendiente; IA.pendiente = null; clearTimeout(IA.timerSeguro); if (cb) cb(); }
 // decir() en modo real: le pasa el guion al agente. Si estamos adentro de una herramienta, lo junta para devolverlo como resultado.
