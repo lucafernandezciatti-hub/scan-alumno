@@ -23,6 +23,7 @@
   Cambios por versión
     v0.1 (2/11/2026): check-in con voz, respiración, plan del día, bloque de Matemática (fracciones)
                       con "No entiendo" y 3 métodos, indicador Scan, vista de pulsera, notas de prueba.
+    v0.4.5 (9/11/2026): no pide sobrescribir el primer mensaje (el plan gratis de ElevenLabs no lo permite).
     v0.4.4 (9/11/2026): prueba también por WebSocket; botón "Diagnosticar conexión" en el panel F.
     v0.4.3 (9/11/2026): si ElevenLabs rechaza el guion de la app (overrides), reintenta con el del panel.
     v0.4.2 (9/11/2026): el Agent ID de Miseño viene cargado; para el modo real alcanza con elegir "Real".
@@ -811,7 +812,7 @@ function intentarSesion(Conversation, conOverrides, tipo){
         const era = IA.estado; IA.estado = "apagado"; IA.conv = null; pintarModo(); if (era === "conectado") evento("ia_desconectada", { detalle: textoError(d) });
       }
     });
-    if (conOverrides) opciones.overrides = { agent: { prompt: { prompt: PROMPT_TUTOR() }, firstMessage: "", language: "es" } };
+    if (conOverrides) opciones.overrides = { agent: { prompt: { prompt: PROMPT_TUTOR() }, language: "es" } };
     try { conv = await Conversation.startSession(opciones); }
     catch(e){ IA.error = textoError(e); return fin(false); }
     setTimeout(() => fin(true), 2500);
@@ -927,7 +928,7 @@ async function diagnosticoIA(){
       onDebug: d => log(ms() + " debug: " + jsonCorto(d).slice(0, 200)),
       onIncomingEvent: ev => { if (ev && /error|interrupt|initiation/i.test(ev.type || "")) log(ms() + " evento: " + jsonCorto(ev).slice(0, 300)); }
     };
-    if (ov) op.overrides = { agent: { prompt: { prompt: PROMPT_TUTOR() }, firstMessage: "", language: "es" } };
+    if (ov) op.overrides = { agent: { prompt: { prompt: PROMPT_TUTOR() }, language: "es" } };
     try { conv = await Conversation.startSession(op); log(ms() + " startSession terminó"); }
     catch(e){ log(ms() + " startSession FALLÓ: " + jsonCorto(e)); }
     await new Promise(r => setTimeout(r, 4000));
