@@ -8,7 +8,7 @@ te muestra qué cambió en tu camino, tu perfil y tu agenda. Nunca explica por q
 
 Abrir la página en Chrome y tocar **Tocá para empezar**.
 
-- **Teclado:** 1–4 ánimo · 1–3 responder · N no entiendo · R repetir · F panel de notas y modo de voz · Shift+R reiniciar.
+- **Teclado:** 1–4 ánimo · Enter listo/seguir · N no entiendo · R repetir · F panel de notas y modo de voz · Shift+R reiniciar.
 - **Recorrido:** Lección → Mi camino → Mi perfil → Agenda → Recreo. Cada etapa se desbloquea al terminar la anterior.
 
 ## Modos de voz
@@ -32,6 +32,7 @@ Settings → Pages → *Deploy from a branch* → `main` / `(root)`. La página 
 
 ## Versiones
 
+- **v0.5:** lecciones interactivas, sin multiple choice: Explorar → Descubrir → Practicar → Mostrame, con widgets (cortar y pintar fracciones, buscar pistas en el cuento, armar frases con "porque", simulador del pasto). Selector de interés en el panel F. "Scan anotó cómo resolviste esto" al cerrar cada bloque.
 - **v0.4.5:** compatible con el plan gratis de ElevenLabs (sin sobrescribir el primer mensaje).
 - **v0.4.4:** también prueba por WebSocket; botón "Diagnosticar conexión" en el panel F.
 - **v0.4.3:** si ElevenLabs rechaza el guion de la app, usa el del panel del agente.
