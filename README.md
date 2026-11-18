@@ -1,38 +1,25 @@
 # Miseño · App del alumno
 
 Prototipo de la app que usa el alumno en el escenario **Enseñanza Scan 360** (Diseño Interactivo, UTDT, 2026).
-Es un tutor de voz para primaria: saluda, pregunta cómo estás, te lleva por las lecciones del día y, antes del recreo,
-te muestra qué cambió en tu camino, tu perfil y tu agenda. Nunca explica por qué el sistema decide lo que decide.
+Joaquín (11) pasa una mañana con Miseño, su tutor principal, que lo deriva con un profe por materia: 22 momentos,
+solo hacia adelante, con una línea de tiempo del día a la izquierda y la interfaz cambiando de tono en cada clase.
+La voz es solo guionada: dice exactamente el texto de cada momento.
+
+Definición completa (recorrido, componentes, identidad, guion): https://claude.ai/artifact/6tipJiz2sJz1bDrqohDWve
 
 ## Cómo se usa
 
-Abrir la página en Chrome y tocar **Tocá para empezar**.
+Abrir la página en Chrome y tocar **Empezar**.
 
-- **Teclado:** 1–4 ánimo · Enter listo/seguir · N no entiendo · R repetir · F panel de notas y modo de voz · Shift+R reiniciar.
-- **Recorrido:** Lección → Mi camino → Mi perfil → Agenda → Recreo. Cada etapa se desbloquea al terminar la anterior.
-
-## Modos de voz
-
-- **Testing:** voz robótica del navegador. No gasta créditos.
-- **Voz de ElevenLabs (por defecto):** ElevenLabs lee exactamente el guion de la app con la voz del agente Miseño. No hay agente que improvise, así que no se pisa ni habla dos veces. La clave ya viene cargada y la voz se detecta sola. El chico habla con el micrófono del navegador.
-- **Agente conversacional (experimental):** agente de voz de ElevenLabs que conversa siguiendo el guion de cada pantalla.
-  Se activa en el panel (tecla F): elegir *Agente conversacional* y tocar *Conectar ahora* (el Agent ID de Miseño ya viene cargado).
-  Si no conecta, la app sigue en modo testing.
-
-La configuración del agente y el guion completo están en el doc "Tutor Miseño con IA de voz: configuración y guion".
-
-## Publicar con GitHub Pages
-
-Settings → Pages → *Deploy from a branch* → `main` / `(root)`. La página queda en `https://<usuario>.github.io/<repo>/`.
-
-## Carpetas
-
-- `index.html`: la app completa (un solo archivo, sin servidor).
-- `versiones/`: copias de las versiones anteriores (también se pueden abrir online, por ejemplo `/versiones/v0.3/`).
-- `feedback/`: para guardar los JSON de notas de los tests (botón "Copiar JSON" del panel).
+- **Teclado:** Enter acción principal · N no entiendo · R repetir · F panel de prueba · Shift+R reiniciar.
+- **Panel de prueba (F):** notas del observador, saltar a un momento, voz (ElevenLabs, navegador o sin voz),
+  lectura de los sensores y copiar el registro.
+- La voz de ElevenLabs no suena dentro del link de claude.ai: usar GitHub Pages o el archivo local.
 
 ## Versiones
 
+- **v1.0:** rediseño completo desde el doc de definición. Línea de tiempo del día, tonos pastel por momento, Miseño y profes (figuras provisorias), lecciones en 4 momentos (explorar, explicar, descubrir, mostrame), voz solo guionada.
+- **v0.5.3:** guardada en `versiones/v0.5.3/`.
 - **v0.5.2:** la app se llama Miseño (antes Scan). Nuevo modo de voz recomendado: ElevenLabs lee exactamente el guion de la app (sin agente conversacional), con API key y Voice ID en el panel F. Cada frase se paga una sola vez.
 - **v0.5.1:** voz real más confiable: se ocultan las etiquetas de entonación, los toques llegan a Miseño como [UI], cola y reintento de mensajes.
 - **v0.5:** lecciones interactivas, sin multiple choice: Explorar → Descubrir → Practicar → Mostrame, con widgets (cortar y pintar fracciones, buscar pistas en el cuento, armar frases con "porque", simulador del pasto). Selector de interés en el panel F. "Miseño anotó cómo resolviste esto" al cerrar cada bloque.
@@ -44,3 +31,10 @@ Settings → Pages → *Deploy from a branch* → `main` / `(root)`. La página 
 - **v0.3:** recorrido guiado y secuencial; Agenda y chat del recreo.
 - **v0.2:** bloques de Lengua y Ciencias; Mi camino, Mi perfil y Avisos.
 - **v0.1:** check-in, plan del día y bloque de Matemática con "No entiendo".
+
+## v1.1 (18/11/2026)
+- Personajes con 5 estados (reposo, habla, piensa, festeja, anima): Guio (tutor), Numi (Matemática), Otto (Lengua), Fini (Ciencias). Imágenes optimizadas en `img/` (originales en `Personajes/`).
+- Apertura con logo y nombre; el pájaro vuela al lugar de Guio.
+- Todo entra y sale con animación; transición entre pantallas; relevo cuando arranca cada materia.
+- Al final de cada clase, pregunta metacognitiva en vez de resultados (dificultad, gusto, seguridad para explicarlo). Las respuestas se usan en "Lo que cambió hoy".
+- Para GitHub Pages hay que subir también la carpeta `img/`.
