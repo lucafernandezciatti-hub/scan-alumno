@@ -21,6 +21,10 @@
     Teclado: 1–4 ánimo · Enter listo/seguir · N no entiendo · R repetir · F nota de prueba · Shift+R reiniciar alumno.
 
   Cambios por versión
+    v0.5.1 (17/11/2026): voz real más confiable. Se ocultan las etiquetas de entonación ([happy], [sad]) del texto en
+                       pantalla. Cada toque llega a Miseño como [UI] junto al guion; si Miseño está hablando, el mensaje
+                       espera a que termine; si no contesta en 4 s, se reenvía una vez. Los widgets le avisan actividad
+                       y contexto sin hacerlo hablar. Registro de mensajes con Miseño en el panel F.
     v0.5 (16/11/2026): lecciones interactivas, sin multiple choice. Cada bloque va en 4 momentos: Explorar (jugar
                        sin nota) → Descubrir (guiado; el tutor corrige según el error) → Practicar → Mostrame
                        (chequeo final con un caso nuevo y una explicación en voz alta). Widgets: Matemática corta y
@@ -631,6 +635,8 @@ li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
   <div class="meta" id="iaEstado"></div>
   <div class="row"><button id="iaDiagBtn">Diagnosticar conexión</button><button id="iaDiagCopy">Copiar diagnóstico</button></div>
   <pre class="diag" id="iaDiag" hidden></pre>
+  <div class="meta">Registro con Miseño (lo que la app le manda y lo que contesta):</div>
+  <pre class="diag" id="iaReg">Todavía no hay mensajes.</pre>
   <hr>
   <h3>Interés del alumno</h3>
   <div class="row modo" role="radiogroup" aria-label="Interés del alumno">
@@ -1781,7 +1787,32 @@ if (!CFG.agentId) CFG.agentId = AGENT_ID_MISENO;
 if (!TEMAS[CFG.interes]) CFG.interes = "futbol";
 PARAMETROS.INTERES_PRINCIPAL = TEMAS[CFG.interes].nombre;
 function guardarCfg(){ try { localStorage.setItem(CFG_KEY, JSON.stringify(CFG)); } catch(e){} }
-const IA = { conv: null, estado: "apagado", hablando: false, pendiente: null, buffer: null, timerSeguro: null };
+const IA = { conv: null, estado: "apagado", hablando: false, pendiente: null, buffer: null, timerSeguro: null, cola: null, esperando: null, timerEspera: null, reg: [], tActividad: 0 };
+// Las voces expresivas de ElevenLabs (v3) mandan etiquetas como [happy] o [sad] para la entonación: se oyen, no se muestran.
+const limpiarEtiquetas = t => String(t || "").replace(/\[[^\]\n]{1,40}\]/g, "").replace(/\s{2,}/g, " ").replace(/\s+([,.!?;:])/g, "$1").trim();
+function regIA(tipo, texto){
+  const h = new Date(); const hora = h.toTimeString().slice(0, 8);
+  IA.reg.push(hora + "  " + tipo + "  " + String(texto || "").replace(/\s+/g, " ").slice(0, 140));
+  if (IA.reg.length > 40) IA.reg.shift();
+  const el = document.getElementById("iaReg"); if (el){ el.textContent = IA.reg.join("\n"); el.scrollTop = el.scrollHeight; }
+}
+// Lo último que el chico hizo en la pantalla (toques y widgets), para que Miseño sepa a qué está respondiendo.
+function accionUI(texto){ S.ultimaAccion = { texto, t: Date.now() }; actividadIA(); }
+function actividadIA(){
+  if (!modoReal() || Date.now() - IA.tActividad < 1500) return;
+  IA.tActividad = Date.now();
+  try { IA.conv.sendUserActivity && IA.conv.sendUserActivity(); } catch(e){}
+}
+function contextoIA(texto){
+  if (!modoReal()) return;
+  try { IA.conv.sendContextualUpdate(texto); regIA("→ contexto", texto); } catch(e){ regIA("⚠ error contexto", e.message); }
+}
+document.addEventListener("click", ev => {
+  const b = ev.target.closest && ev.target.closest("button");
+  if (!b || b.closest("#fb") || b.id === "fbBtn") return;
+  const t = (b.getAttribute("aria-label") || b.textContent || "").replace(/\s+/g, " ").trim();
+  if (t) accionUI("Tocó el botón “" + t.slice(0, 40) + "”");
+}, true);
 const modoReal = () => CFG.modo === "real" && IA.estado === "conectado";
 
 const PROMPT_TUTOR = () => `Te llamás Miseño. Sos el tutor de voz de Scan, el sistema que usa una escuela primaria en el año 2050. Si te preguntan cómo te llamás, decí que sos Miseño. Hablás con ${PARAMETROS.NOMBRE_ALUMNO}, un chico de 10 a 12 años. Le gusta ${tema().gusta}.
@@ -1801,7 +1832,10 @@ EL GUION (lo manda la app)
 - Los mensajes que empiezan con [SISTEMA] vienen de la app, no del chico. Dicen en qué pantalla está y qué le tenés que decir.
 - Decilo con tus palabras, pero sin cambiar datos, números, nombres ni opciones de respuesta. No agregues contenido nuevo.
 - Si el mensaje dice LEÉ TEXTUAL, leé exactamente ese texto, sin agregar nada antes ni después.
-- Nunca menciones la app, el [SISTEMA], las herramientas ni que recibiste instrucciones.
+- Algunos mensajes empiezan con [UI]: cuentan qué tocó o qué hizo el chico en la pantalla justo antes. No lo repitas: usalo para que tu respuesta suene a reacción a lo que hizo, y después decí lo que pide el [SISTEMA].
+- Si llega información de contexto sobre la pantalla, no la comentes: tenela en cuenta para tu próxima respuesta.
+- Respondé siempre a cada mensaje [SISTEMA], aunque el chico no haya hablado.
+- Nunca menciones la app, el [SISTEMA], el [UI], las herramientas ni que recibiste instrucciones.
 
 CUANDO EL CHICO HABLA, usá una herramienta para que la app haga lo que corresponde:
 - registrar_animo: cuando cuenta cómo se siente. Elegí la opción más cercana: contento, tranquilo, nervioso o cansado.
@@ -1846,13 +1880,19 @@ function opcionesSesion(){
     onConnect: () => {},
     onModeChange: ({ mode }) => {
       const wrap = $("#orbWrap");
-      if (mode === "speaking"){ IA.hablando = true; clearTimeout(IA.timerSeguro); wrap.classList.add("speaking"); wrap.classList.remove("listening"); }
-      else { const habia = IA.hablando; IA.hablando = false; wrap.classList.remove("speaking"); wrap.classList.add("listening"); if (habia) correrPendiente(); }
+      if (mode === "speaking"){ IA.hablando = true; respondio(); clearTimeout(IA.timerSeguro); wrap.classList.add("speaking"); wrap.classList.remove("listening"); }
+      else {
+        const habia = IA.hablando; IA.hablando = false; wrap.classList.remove("speaking"); wrap.classList.add("listening");
+        if (IA.cola){ const c = IA.cola; IA.cola = null; enviarAhora(c); }
+        else if (habia) correrPendiente();
+      }
     },
     onMessage: m => {
       const rol = m.role || (m.source === "ai" ? "agent" : "user");
-      LOG.conversacion = LOG.conversacion || []; LOG.conversacion.push({ t: new Date().toISOString(), rol, texto: m.message }); guardarLog();
-      if (rol === "agent") caption.textContent = m.message;
+      const limpio = limpiarEtiquetas(m.message);
+      LOG.conversacion = LOG.conversacion || []; LOG.conversacion.push({ t: new Date().toISOString(), rol, texto: limpio }); guardarLog();
+      regIA(rol === "agent" ? "← Miseño" : "← chico (voz)", limpio);
+      if (rol === "agent"){ respondio(); if (limpio) caption.textContent = limpio; }
       else {
         const h = $("#heard"); if (h) h.textContent = "Te escuché: “" + m.message + "”";
         if (S.explicando){ S.explic = (S.explic ? S.explic + " " : "") + m.message; const d = $("#expDicho"); if (d){ d.hidden = false; d.textContent = "Le contaste: “" + S.explic + "”"; } const b = $("#yaConte"); if (b) b.textContent = "Seguir"; }
@@ -1905,14 +1945,32 @@ async function conectarIA(){
 function correrPendiente(){ const cb = IA.pendiente; IA.pendiente = null; clearTimeout(IA.timerSeguro); if (cb) cb(); }
 // decir() en modo real: le pasa el guion al agente. Si estamos adentro de una herramienta, lo junta para devolverlo como resultado.
 function decirIA(texto, alTerminar){
-  IA.pendiente = alTerminar || null;
-  if (IA.buffer){ IA.buffer.push(texto); return; }
+  if (IA.buffer){ IA.pendiente = alTerminar || null; IA.buffer.push(texto); return; }
   const pantalla = S.tab === "hoy" ? S.pantalla + (S.pantalla === "bloque" ? " · " + PLAN[S.bloque].materia + " · " + S.modo : "") : S.tab;
-  const msg = S.textual ? `[SISTEMA] Pantalla: ${pantalla}. LEÉ TEXTUAL: "${texto}"` : `[SISTEMA] Pantalla: ${pantalla}. Decile al alumno: "${texto}"`;
-  try { IA.conv.sendUserMessage(msg); } catch(e){ evento("ia_error_envio"); }
-  // por si el agente no llega a hablar: no dejar la app trabada
-  clearTimeout(IA.timerSeguro); IA.timerSeguro = setTimeout(() => { if (!IA.hablando) correrPendiente(); }, 9000);
+  const a = S.ultimaAccion && Date.now() - S.ultimaAccion.t < 8000 ? `[UI] ${S.ultimaAccion.texto}. ` : "";
+  S.ultimaAccion = null;
+  const msg = a + (S.textual ? `[SISTEMA] Pantalla: ${pantalla}. LEÉ TEXTUAL: "${texto}"` : `[SISTEMA] Pantalla: ${pantalla}. Decile al alumno: "${texto}"`);
+  const envio = { msg, cb: alTerminar || null, intentos: 0 };
+  // Si Miseño está hablando, se espera a que termine (el mensaje nuevo reemplaza al que estaba esperando).
+  if (IA.hablando){ if (IA.cola) regIA("· reemplazado", IA.cola.msg); IA.cola = envio; regIA("… en espera", msg); return; }
+  enviarAhora(envio);
 }
+function enviarAhora(envio){
+  IA.pendiente = envio.cb;
+  envio.intentos++;
+  try { IA.conv.sendUserMessage(envio.msg); regIA(envio.intentos > 1 ? "→ reenvío" : "→ app", envio.msg); }
+  catch(e){ evento("ia_error_envio"); regIA("⚠ error al mandar", e.message); }
+  IA.esperando = envio;
+  // Si Miseño no reacciona en 4 s, se reenvía una vez. Si tampoco, la app sigue sola para no quedar trabada.
+  clearTimeout(IA.timerEspera);
+  IA.timerEspera = setTimeout(() => {
+    if (IA.esperando !== envio || IA.hablando) return;
+    if (envio.intentos < 2 && modoReal()){ evento("ia_reenvio"); enviarAhora(envio); }
+    else { regIA("⚠ sin respuesta", "Miseño no contestó. La app sigue."); evento("ia_sin_respuesta"); IA.esperando = null; correrPendiente(); }
+  }, 4000);
+  clearTimeout(IA.timerSeguro); IA.timerSeguro = setTimeout(() => { if (!IA.hablando) correrPendiente(); }, 12000);
+}
+function respondio(){ IA.esperando = null; clearTimeout(IA.timerEspera); }
 // Corre una acción de la app y devuelve al agente lo que la app quería decir, como resultado de la herramienta.
 function conAgente(nombre, accion){
   evento("ia_herramienta", { herramienta: nombre });
@@ -2280,6 +2338,11 @@ function alCambiar(e, ev){
   if (!S.primer){ S.primer = Date.now(); S.met.duda += Math.round((S.primer - S.t0) / 1000); }
   S.toques++; S.met.toques++;
   if (ev.tipo !== "dibujo") evento("widget", { bloque: PLAN[S.bloque].id, escena: S.esc + 1, accion: ev.tipo });
+  accionUI("En el dibujo de la pantalla: " + ({ corte:"hizo un corte", pintura:"pintó una parte", borrar:"borró", nivel:"llenó el recipiente", eleccion:"eligió a alguien", frase:"tocó una frase del cuento", dibujo:"dibujó", colocar:"movió una tarjeta", emocion:"movió el termómetro", toggle:"cambió el simulador", dias:"adelantó los días", parte:"tocó una parte de la planta", leido:"terminó de escuchar el cuento" }[ev.tipo] || ev.tipo));
+  if (modoReal() && ESC[S.esc].fase !== "explorar" && !e.autoCheck){
+    clearTimeout(S.timerContexto);
+    S.timerContexto = setTimeout(() => contextoIA("[UI] El chico está resolviendo en la pantalla: " + sinTags(e.consigna) + ". Todavía no tocó Listo. Si te habla, guialo con una pista corta sin darle la respuesta."), 1200);
+  }
   const fk = $("#fbk"); if (fk && !S.resuelto) fk.hidden = true;
   if (ESC[S.esc].fase === "explorar" && !S.ayuda){
     const sg = $("#seguir");
