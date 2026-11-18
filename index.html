@@ -631,10 +631,8 @@ li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
     <label><input type="radio" name="modo" value="real"> Agente conversacional de ElevenLabs (experimental)</label>
   </div>
   <div id="vozCampos">
-    <label for="vozKey" class="meta">API key de ElevenLabs (queda guardada solo en este navegador)</label>
-    <input id="vozKey" class="fb-input" type="password" placeholder="sk_…" autocomplete="off">
-    <label for="vozId" class="meta">Voice ID (la voz de Miseño)</label>
-    <input id="vozId" class="fb-input" placeholder="Ej.: el ID de la voz que usa tu agente" autocomplete="off">
+    <label for="vozId" class="meta">Voice ID (opcional: si queda vacío, se usa la voz del agente Miseño)</label>
+    <input id="vozId" class="fb-input" placeholder="Se completa solo con la voz del agente" autocomplete="off">
     <div class="row"><button id="vozProbar">Probar la voz</button></div>
   </div>
   <div id="agenteCampos">
@@ -1791,17 +1789,30 @@ function vozRobotica(texto, id, wrap, alTerminar){
    Una sola voz a la vez: cada frase nueva corta la anterior, así nunca se pisa. Lo que ya se dijo queda guardado
    y no vuelve a gastar créditos. Si algo falla, esa frase sale con la voz robótica. El chico habla con el
    micrófono del navegador, igual que en testing. */
-const modoVoz = () => CFG.modo === "voz" && !!CFG.vozKey && !!CFG.vozId;
+const modoVoz = () => CFG.modo === "voz" && !!CFG.vozKey;
+// La voz es la misma del agente Miseño: la primera vez se le pregunta a ElevenLabs cuál usa y queda guardada.
+let buscandoVoz = null;
+function vozDeMiseno(){
+  if (CFG.vozId) return Promise.resolve(CFG.vozId);
+  if (buscandoVoz) return buscandoVoz;
+  buscandoVoz = fetch(`https://api.elevenlabs.io/v1/convai/agents/${encodeURIComponent(CFG.agentId || AGENT_ID_MISENO)}`, { headers: { "xi-api-key": CFG.vozKey } })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error("no se pudo leer el agente (" + r.status + ")")))
+    .then(d => { const t = (d.conversation_config || {}).tts || {}; if (!t.voice_id) throw new Error("el agente no tiene voz"); CFG.vozId = t.voice_id; guardarCfg(); evento("voz_del_agente", { voz: t.voice_id }); pintarModo(); return CFG.vozId; })
+    .catch(e => { VOZ.aviso = "No pude leer la voz del agente (" + e.message + "). Uso una voz genérica."; evento("voz_respaldo", { error: e.message }); pintarModo(); return VOZ_ID_RESPALDO; })
+    .finally(() => { buscandoVoz = null; });
+  return buscandoVoz;
+}
 const CACHE_VOZ = new Map();
 let audioActual = null;
 function cortarAudio(){ if (audioActual){ try { audioActual.onended = null; audioActual.onerror = null; audioActual.pause(); } catch(e){} audioActual = null; } }
 async function audioEleven(texto){
-  const clave = CFG.vozId + "|" + texto;
+  const voz = await vozDeMiseno();
+  const clave = voz + "|" + texto;
   if (CACHE_VOZ.has(clave)) return CACHE_VOZ.get(clave);
   const modelo = CFG.vozModelo || "eleven_flash_v2_5";
   const cuerpo = { text: texto, model_id: modelo, voice_settings: { stability: 0.5, similarity_boost: 0.8 } };
   if (/v2_5/.test(modelo)) cuerpo.language_code = "es";
-  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(CFG.vozId)}?output_format=mp3_44100_128`, {
+  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voz)}?output_format=mp3_44100_128`, {
     method: "POST", headers: { "xi-api-key": CFG.vozKey, "Content-Type": "application/json", "Accept": "audio/mpeg" }, body: JSON.stringify(cuerpo)
   });
   if (!r.ok){ let d = ""; try { d = (await r.text()).slice(0, 160); } catch(e){} throw new Error("ElevenLabs respondió " + r.status + (d ? ": " + d : "")); }
@@ -1824,7 +1835,7 @@ async function hablarEleven(texto, id, wrap, alTerminar){
   try { await a.play(); }
   catch(e){ VOZ.error = "el navegador no dejó reproducir el audio (" + e.message + ")"; pintarModo(); fin(); }
 }
-const VOZ = { error: "" };
+const VOZ = { error: "", aviso: "" };
 
 /* ===================== MODO REAL: TUTOR CON IA DE VOZ (ElevenLabs Agents) =====================
    Modo testing: voz robótica del navegador + reconocimiento del navegador. No gasta créditos.
@@ -1835,8 +1846,15 @@ const VOZ = { error: "" };
 const SDK_ELEVENLABS = "https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.31.0/dist/lib.iife.js";
 const CFG_KEY = "scan-alumno-config";
 const AGENT_ID_MISENO = "agent_9401m714e6nhf2nbf291sjvqfysd"; // agente "Miseño" en ElevenLabs
-const CFG = (() => { try { return Object.assign({ modo: "testing", agentId: "", interes: "futbol", vozKey: "", vozId: "", vozModelo: "eleven_flash_v2_5" }, JSON.parse(localStorage.getItem(CFG_KEY)) || {}); } catch(e){ return { modo: "testing", agentId: "", interes: "futbol" }; } })();
+// Clave de ElevenLabs para que la voz lea el guion. OJO: este archivo es público en GitHub Pages; conviene que la
+// clave tenga permiso solo de texto a voz y un tope de créditos en la cuenta de ElevenLabs.
+const VOZ_KEY = "sk_b60db8e141b089c6958790d6f83dc37f3e62e11ebe93cc33";
+const VOZ_ID_RESPALDO = "EXAVITQu4vr4xnSDxMaL"; // voz genérica de ElevenLabs, solo si no se puede leer la del agente
+const CFG = (() => { try { return Object.assign({ modo: "voz", agentId: "", interes: "futbol", vozKey: "", vozId: "", vozModelo: "eleven_flash_v2_5" }, JSON.parse(localStorage.getItem(CFG_KEY)) || {}); } catch(e){ return { modo: "testing", agentId: "", interes: "futbol" }; } })();
 if (!CFG.agentId) CFG.agentId = AGENT_ID_MISENO;
+if (!CFG.vozKey) CFG.vozKey = VOZ_KEY;
+// Quien venía usando el agente conversacional pasa una vez al modo que lee el guion.
+if (!CFG.migroVoz2){ CFG.modo = "voz"; CFG.migroVoz = CFG.migroVoz2 = true; try { localStorage.setItem("scan-alumno-config", JSON.stringify(CFG)); } catch(e){} }
 if (!TEMAS[CFG.interes]) CFG.interes = "futbol";
 PARAMETROS.INTERES_PRINCIPAL = TEMAS[CFG.interes].nombre;
 function guardarCfg(){ try { localStorage.setItem(CFG_KEY, JSON.stringify(CFG)); } catch(e){} }
@@ -1922,10 +1940,9 @@ function pintarModo(){
   if (vc) vc.hidden = CFG.modo !== "voz"; if (ac) ac.hidden = CFG.modo !== "real";
   if (CFG.modo === "voz"){
     if (chip){ chip.textContent = modoVoz() ? (VOZ.error ? "Voz (con fallas)" : "Voz ElevenLabs") : "Voz: faltan datos"; chip.className = "modo-chip " + (modoVoz() && !VOZ.error ? "real" : "warn"); }
-    const st = $("#iaEstado"); if (st) st.textContent = !modoVoz() ? "Pegá la API key y el Voice ID. Mientras falten, se usa la voz robótica." : VOZ.error ? "Última falla: " + VOZ.error + ". Esa frase salió con la voz robótica." : "ElevenLabs lee exactamente el guion de la app. Cada frase se paga una sola vez.";
+    const st = $("#iaEstado"); if (st) st.textContent = !modoVoz() ? "Falta la clave de ElevenLabs: se usa la voz robótica." : VOZ.error ? "Última falla: " + VOZ.error + ". Esa frase salió con la voz robótica." : (VOZ.aviso ? VOZ.aviso + " " : "") + "ElevenLabs lee exactamente el guion de la app con la voz de Miseño. Cada frase se paga una sola vez.";
     document.querySelectorAll("[name=modo]").forEach(r => r.checked = r.value === CFG.modo);
-    const k = $("#vozKey"), v = $("#vozId");
-    if (k && document.activeElement !== k) k.value = CFG.vozKey; if (v && document.activeElement !== v) v.value = CFG.vozId;
+    const v = $("#vozId"); if (v && document.activeElement !== v) v.value = CFG.vozId;
     return;
   }
   if (chip){
@@ -2859,7 +2876,6 @@ document.querySelectorAll("[name=modo]").forEach(r => r.onchange = async () => {
   if (CFG.modo === "real" && S.pantalla !== "inicio") { await conectarIA(); render(); }
 });
 $("#agentId").oninput = e => { CFG.agentId = e.target.value.trim(); guardarCfg(); };
-$("#vozKey").oninput = e => { CFG.vozKey = e.target.value.trim(); VOZ.error = ""; guardarCfg(); pintarModo(); };
 $("#vozId").oninput = e => { CFG.vozId = e.target.value.trim(); VOZ.error = ""; guardarCfg(); pintarModo(); };
 $("#vozProbar").onclick = () => { if (!modoVoz()){ pintarModo(); return; } decir("Hola, soy Miseño. Así suena mi voz.", null, () => pintarModo()); };
 function pintarInteres(){ document.querySelectorAll("[name=interes]").forEach(r => r.checked = r.value === CFG.interes); }
