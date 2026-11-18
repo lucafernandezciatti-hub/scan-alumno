@@ -13,8 +13,8 @@ Abrir la página en Chrome y tocar **Tocá para empezar**.
 
 ## Modos de voz
 
-- **Testing** (por defecto): voz robótica del navegador. No gasta créditos.
-- **Voz de ElevenLabs (recomendado):** ElevenLabs lee exactamente el guion de la app con la voz de Miseño. No hay agente que improvise, así que no se pisa ni habla dos veces. En el panel (tecla F) pegar la API key y el Voice ID; quedan guardados solo en ese navegador, nunca en el repo. El chico habla con el micrófono del navegador.
+- **Testing:** voz robótica del navegador. No gasta créditos.
+- **Voz de ElevenLabs (por defecto):** ElevenLabs lee exactamente el guion de la app con la voz del agente Miseño. No hay agente que improvise, así que no se pisa ni habla dos veces. La clave ya viene cargada y la voz se detecta sola. El chico habla con el micrófono del navegador.
 - **Agente conversacional (experimental):** agente de voz de ElevenLabs que conversa siguiendo el guion de cada pantalla.
   Se activa en el panel (tecla F): elegir *Agente conversacional* y tocar *Conectar ahora* (el Agent ID de Miseño ya viene cargado).
   Si no conecta, la app sigue en modo testing.
