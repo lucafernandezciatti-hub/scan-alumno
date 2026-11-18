@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scan · App del alumno</title>
+<title>Miseño · App del alumno</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <!--
   SCAN · APP DEL ALUMNO — prototipo v0.5
-  Diseño Interactivo (UTDT) · escenario "Enseñanza Scan 360" · PRD: https://claude.ai/artifact/JMZs6eA4rMs8cpASa4mdSJ
+  Diseño Interactivo (UTDT) · escenario "Enseñanza Scan 360" (la app del alumno se llama Miseño) · PRD: https://claude.ai/artifact/JMZs6eA4rMs8cpASa4mdSJ
 
   Idea: tutor de voz para alumnos de primaria. Saluda, pregunta cómo estás, te lleva por los bloques
   del día que eligió el sistema y cambia de método cuando no entendés. Nunca muestra por qué decide.
@@ -32,10 +32,10 @@
                        busca pistas en el texto, arma frases con "porque" y ordena el marcador; Ciencias simula el
                        pasto de la cancha (sol, riego, aire, lámpara), lleva la gota por la planta y diagnostica.
                        "No entiendo": 1) Miseño lo hace, 2) caso más chico o paso a paso, 3) aviso a la seño.
-                       Selector de interés en el panel F (fútbol, plantas, dibujar). "Scan anotó cómo resolviste
+                       Selector de interés en el panel F (fútbol, plantas, dibujar). "Miseño anotó cómo resolviste
                        esto" al cerrar cada bloque.
     v0.1 (2/11/2026): check-in con voz, respiración, plan del día, bloque de Matemática (fracciones)
-                      con "No entiendo" y 3 métodos, indicador Scan, vista de pulsera, notas de prueba.
+                      con "No entiendo" y 3 métodos, indicador Miseño, vista de pulsera, notas de prueba.
     v0.4.5 (9/11/2026): no pide sobrescribir el primer mensaje (el plan gratis de ElevenLabs no lo permite).
     v0.4.4 (9/11/2026): prueba también por WebSocket; botón "Diagnosticar conexión" en el panel F.
     v0.4.3 (9/11/2026): si ElevenLabs rechaza el guion de la app (overrides), reintenta con el del panel.
@@ -50,15 +50,15 @@
                       Ciencias pasa a después del recreo.
     v0.2 (3/11/2026): bloques de Lengua (cuento "La arquera") y Ciencias (plantas, cierre con grupo de huerta);
                       motor de bloques con opciones de texto y voz por palabras clave; Mi camino (¿Por qué?
-                      genérico, Música en pausa), Mi perfil Scan y Avisos; teclas 1–3 para responder; fin del día.
+                      genérico, Música en pausa), Mi perfil Miseño y Avisos; teclas 1–3 para responder; fin del día.
 
   Ideas pendientes (ver PRD): límite emocional (v0.3);
   proyecto grupal y modos de la pulsera (después).
 -->
 <style>
 :root{
-  /* Mundo Scan: superficie cálida y amable, un solo azul que "mira". Vidrio translúcido sobre crema.
-     Layout: escenario del tutor a la izquierda, pulsera y lectura Scan a la derecha, navegación abajo. */
+  /* Mundo Miseño: superficie cálida y amable, un solo azul que "mira". Vidrio translúcido sobre crema.
+     Layout: escenario del tutor a la izquierda, pulsera y lectura Miseño a la derecha, navegación abajo. */
   --bg:#F4EFE6;
   --bg-deep:#EAE2D4;
   --glass:rgba(255,255,255,.62);
@@ -528,7 +528,7 @@ li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
 .explica-orb{width:64px;height:64px;border-radius:50%;background:var(--scan-soft);color:var(--scan);display:grid;place-items:center}
 .explica-orb svg{width:30px;height:30px}
 
-/* Scan anotó */
+/* Miseño anotó */
 .anota{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left}
 .anota li{background:var(--bg);border-radius:12px;padding:8px 10px;font-size:15px;color:var(--ink)}
 .anota b{display:block;font-family:var(--font-display);font-size:22px;color:var(--scan)}
@@ -554,7 +554,7 @@ li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Scan</div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Miseño</div>
     <div class="top-right">
       <span id="clock">Martes 8 de noviembre · 09:05</span>
       <span class="modo-chip test" id="modoChip" title="Modo de voz (cambialo en el panel de notas, tecla F)">Modo testing</span>
@@ -588,7 +588,7 @@ li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
         </div>
       </div>
       <div class="panel reading" id="readingPanel">
-        <h2>Scan te está leyendo</h2>
+        <h2>Miseño te está leyendo</h2>
         <div class="meter"><span>Foco</span><span class="dots" id="focusDots"><b></b><b></b><b></b><b></b></span></div>
         <div class="meter"><span>Ánimo</span><span class="dots" id="moodDots"><b></b><b></b><b></b><b></b></span></div>
         <div class="reading-note"><span class="pulse"></span><span id="readingNote">Lectura en vivo</span></div>
@@ -627,11 +627,21 @@ li.is-new{box-shadow:none;color:var(--scan);font-weight:700}
   <h3>Modo de voz</h3>
   <div class="row modo" role="radiogroup" aria-label="Modo de voz">
     <label><input type="radio" name="modo" value="testing"> Testing (voz robótica, gratis)</label>
-    <label><input type="radio" name="modo" value="real"> Real (IA de ElevenLabs, gasta créditos)</label>
+    <label><input type="radio" name="modo" value="voz"> Voz de ElevenLabs: lee el guion tal cual (recomendado)</label>
+    <label><input type="radio" name="modo" value="real"> Agente conversacional de ElevenLabs (experimental)</label>
   </div>
-  <label for="agentId" class="meta">Agent ID de ElevenLabs</label>
-  <input id="agentId" class="fb-input" placeholder="agent_…" autocomplete="off">
-  <div class="row"><button id="iaConectar">Conectar ahora</button></div>
+  <div id="vozCampos">
+    <label for="vozKey" class="meta">API key de ElevenLabs (queda guardada solo en este navegador)</label>
+    <input id="vozKey" class="fb-input" type="password" placeholder="sk_…" autocomplete="off">
+    <label for="vozId" class="meta">Voice ID (la voz de Miseño)</label>
+    <input id="vozId" class="fb-input" placeholder="Ej.: el ID de la voz que usa tu agente" autocomplete="off">
+    <div class="row"><button id="vozProbar">Probar la voz</button></div>
+  </div>
+  <div id="agenteCampos">
+    <label for="agentId" class="meta">Agent ID de ElevenLabs</label>
+    <input id="agentId" class="fb-input" placeholder="agent_…" autocomplete="off">
+    <div class="row"><button id="iaConectar">Conectar ahora</button></div>
+  </div>
   <div class="meta" id="iaEstado"></div>
   <div class="row"><button id="iaDiagBtn">Diagnosticar conexión</button><button id="iaDiagCopy">Copiar diagnóstico</button></div>
   <pre class="diag" id="iaDiag" hidden></pre>
@@ -660,7 +670,7 @@ const PARAMETROS = {
   MAX_NO_ENTIENDO: 3,
   VOZ_VELOCIDAD: 0.95,
   VOZ_ACTIVA: true,
-  TEXTO_POR_QUE: "Scan eligió el mejor camino para vos según cómo aprendés."
+  TEXTO_POR_QUE: "Elegí el mejor camino para vos según cómo aprendés."
 };
 
 /* ===================== DATOS DE EJEMPLO ===================== */
@@ -1680,7 +1690,7 @@ const BLOQUES = {
   mate: { escenas: escenasMate },
   lengua: { escenas: escenasLengua },
   ciencias: { escenas: escenasCiencias,
-    cierre: { titulo: "Scan armó tu grupo", texto: "Para la huerta vas a trabajar con Sofía y Bruno. Empiezan mañana a las 10.", dicho: "Una noticia: Scan armó tu grupo para la huerta. Vas a trabajar con Sofía y Bruno. Empiezan mañana a las diez." } }
+    cierre: { titulo: "Miseño armó tu grupo", texto: "Para la huerta vas a trabajar con Sofía y Bruno. Empiezan mañana a las 10.", dicho: "Una noticia: armé tu grupo para la huerta. Vas a trabajar con Sofía y Bruno. Empiezan mañana a las diez." } }
 };
 
 // Mi camino: ramas de la trayectoria. "actual" = índice del tramo en curso.
@@ -1692,7 +1702,7 @@ const RAMAS = [
   { id:"musica", nombre:"Música", estado:"pausa", desde:"7 de noviembre", tramos:["Ritmo", "Flauta", "Canto en grupo"], actual:1 }
 ];
 
-// Mi perfil Scan
+// Mi perfil Miseño
 const PERFIL = {
   talentos: ["Cálculo mental", "Trabajo en equipo"],
   intereses: [ { t:"Fútbol", n:23 }, { t:"Plantas", n:9 }, { t:"Dibujar", n:6 } ],
@@ -1701,7 +1711,7 @@ const PERFIL = {
   animoSemana: [ { d:"Lun", v:3 }, { d:"Mar", v:4 }, { d:"Mié", v:2 }, { d:"Jue", v:3 }, { d:"Vie", v:3 } ]
 };
 
-// Agenda del día. "antes" = lo que había antes de que Scan lo cambiara.
+// Agenda del día. "antes" = lo que había antes de que Miseño lo cambiara.
 const AGENDA = [
   { h:"09:05", t:"Matemática", sub:"Fracciones", bloque:"mate" },
   { h:"09:35", t:"Lengua", sub:"Cuento: La arquera", bloque:"lengua" },
@@ -1753,6 +1763,12 @@ function decir(texto, sub, alTerminar, visible){
   $("#repeatBtn").hidden = false;
   if (modoReal()){ decirIA(texto, alTerminar); return; }
   const wrap = $("#orbWrap");
+  if (modoVoz() && PARAMETROS.VOZ_ACTIVA){ hablarEleven(texto, id, wrap, alTerminar); return; }
+  cortarAudio();
+  vozRobotica(texto, id, wrap, alTerminar);
+}
+function repetir(){ if (S.ultimoDicho) decir(S.ultimoDicho); evento("repetir"); }
+function vozRobotica(texto, id, wrap, alTerminar){
   if (!PARAMETROS.VOZ_ACTIVA || !("speechSynthesis" in window)){
     wrap.classList.add("speaking");
     setTimeout(() => { if (id === hablaId) wrap.classList.remove("speaking"); alTerminar(); }, Math.min(4000, 600 + texto.length * 35));
@@ -1765,13 +1781,50 @@ function decir(texto, sub, alTerminar, visible){
     u.rate = PARAMETROS.VOZ_VELOCIDAD; u.pitch = 1.05;
     let listo = false;
     const fin = () => { if (listo) return; listo = true; if (id === hablaId) wrap.classList.remove("speaking"); alTerminar(); };
-    u.onstart = () => wrap.classList.add("speaking");
-    u.onend = fin; u.onerror = fin;
-    speechSynthesis.speak(u);
-    setTimeout(fin, 1500 + texto.length * 90); // por si el navegador no avisa el final
+    u.onstart = () => wrap.classList.add("speaking"); u.onend = fin; u.onerror = fin;
+    speechSynthesis.speak(u); setTimeout(fin, 1500 + texto.length * 90);
   } catch(e){ alTerminar(); }
 }
-function repetir(){ if (S.ultimoDicho) decir(S.ultimoDicho); evento("repetir"); }
+
+/* ===================== VOZ DE ELEVENLABS QUE LEE EL GUION =====================
+   Sin agente: la app le pasa a ElevenLabs (texto a voz) exactamente lo que tiene que decir y reproduce el audio.
+   Una sola voz a la vez: cada frase nueva corta la anterior, así nunca se pisa. Lo que ya se dijo queda guardado
+   y no vuelve a gastar créditos. Si algo falla, esa frase sale con la voz robótica. El chico habla con el
+   micrófono del navegador, igual que en testing. */
+const modoVoz = () => CFG.modo === "voz" && !!CFG.vozKey && !!CFG.vozId;
+const CACHE_VOZ = new Map();
+let audioActual = null;
+function cortarAudio(){ if (audioActual){ try { audioActual.onended = null; audioActual.onerror = null; audioActual.pause(); } catch(e){} audioActual = null; } }
+async function audioEleven(texto){
+  const clave = CFG.vozId + "|" + texto;
+  if (CACHE_VOZ.has(clave)) return CACHE_VOZ.get(clave);
+  const modelo = CFG.vozModelo || "eleven_flash_v2_5";
+  const cuerpo = { text: texto, model_id: modelo, voice_settings: { stability: 0.5, similarity_boost: 0.8 } };
+  if (/v2_5/.test(modelo)) cuerpo.language_code = "es";
+  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(CFG.vozId)}?output_format=mp3_44100_128`, {
+    method: "POST", headers: { "xi-api-key": CFG.vozKey, "Content-Type": "application/json", "Accept": "audio/mpeg" }, body: JSON.stringify(cuerpo)
+  });
+  if (!r.ok){ let d = ""; try { d = (await r.text()).slice(0, 160); } catch(e){} throw new Error("ElevenLabs respondió " + r.status + (d ? ": " + d : "")); }
+  const url = URL.createObjectURL(await r.blob());
+  CACHE_VOZ.set(clave, url);
+  return url;
+}
+async function hablarEleven(texto, id, wrap, alTerminar){
+  cortarAudio(); try { speechSynthesis.cancel(); } catch(e){}
+  wrap.classList.add("speaking");
+  let url;
+  try { url = await audioEleven(texto); }
+  catch(e){ VOZ.error = e.message; evento("voz_error", { error: e.message }); pintarModo(); return vozRobotica(texto, id, wrap, alTerminar); }
+  if (id !== hablaId) return;               // mientras cargaba, ya hubo otra frase: esta no se dice
+  VOZ.error = "";
+  const a = new Audio(url); audioActual = a;
+  let listo = false;
+  const fin = () => { if (listo) return; listo = true; if (audioActual === a) audioActual = null; if (id === hablaId) wrap.classList.remove("speaking"); alTerminar(); };
+  a.onended = fin; a.onerror = fin;
+  try { await a.play(); }
+  catch(e){ VOZ.error = "el navegador no dejó reproducir el audio (" + e.message + ")"; pintarModo(); fin(); }
+}
+const VOZ = { error: "" };
 
 /* ===================== MODO REAL: TUTOR CON IA DE VOZ (ElevenLabs Agents) =====================
    Modo testing: voz robótica del navegador + reconocimiento del navegador. No gasta créditos.
@@ -1782,7 +1835,7 @@ function repetir(){ if (S.ultimoDicho) decir(S.ultimoDicho); evento("repetir"); 
 const SDK_ELEVENLABS = "https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.31.0/dist/lib.iife.js";
 const CFG_KEY = "scan-alumno-config";
 const AGENT_ID_MISENO = "agent_9401m714e6nhf2nbf291sjvqfysd"; // agente "Miseño" en ElevenLabs
-const CFG = (() => { try { return Object.assign({ modo: "testing", agentId: "", interes: "futbol" }, JSON.parse(localStorage.getItem(CFG_KEY)) || {}); } catch(e){ return { modo: "testing", agentId: "", interes: "futbol" }; } })();
+const CFG = (() => { try { return Object.assign({ modo: "testing", agentId: "", interes: "futbol", vozKey: "", vozId: "", vozModelo: "eleven_flash_v2_5" }, JSON.parse(localStorage.getItem(CFG_KEY)) || {}); } catch(e){ return { modo: "testing", agentId: "", interes: "futbol" }; } })();
 if (!CFG.agentId) CFG.agentId = AGENT_ID_MISENO;
 if (!TEMAS[CFG.interes]) CFG.interes = "futbol";
 PARAMETROS.INTERES_PRINCIPAL = TEMAS[CFG.interes].nombre;
@@ -1815,7 +1868,7 @@ document.addEventListener("click", ev => {
 }, true);
 const modoReal = () => CFG.modo === "real" && IA.estado === "conectado";
 
-const PROMPT_TUTOR = () => `Te llamás Miseño. Sos el tutor de voz de Scan, el sistema que usa una escuela primaria en el año 2050. Si te preguntan cómo te llamás, decí que sos Miseño. Hablás con ${PARAMETROS.NOMBRE_ALUMNO}, un chico de 10 a 12 años. Le gusta ${tema().gusta}.
+const PROMPT_TUTOR = () => `Te llamás Miseño. Sos el tutor de voz de la app Miseño, el sistema que usa una escuela primaria en el año 2050. Si te preguntan cómo te llamás, decí que sos Miseño. Hablás con ${PARAMETROS.NOMBRE_ALUMNO}, un chico de 10 a 12 años. Le gusta ${tema().gusta}.
 
 LAS LECCIONES SON INTERACTIVAS
 - Cada lección tiene 4 momentos: explorar (juega sin nota), descubrir (lo guiás), practicar y mostrame (el chequeo final).
@@ -1848,7 +1901,7 @@ CUANDO EL CHICO HABLA, usá una herramienta para que la app haga lo que correspo
 
 REGLAS QUE NO SE ROMPEN
 - Nunca des la respuesta correcta. Guiá con pistas cortas.
-- Si pregunta por qué Scan decidió algo (sus materias, una materia en pausa, su grupo, su horario, su perfil), respondé solamente: "Scan eligió el mejor camino para vos según cómo aprendés". No inventes ni supongas motivos.
+- Si pregunta por qué Miseño decidió algo (sus materias, una materia en pausa, su grupo, su horario, su perfil), respondé solamente: "Elegí el mejor camino para vos según cómo aprendés". No inventes ni supongas motivos.
 - No sos su psicólogo ni su amigo íntimo. Si cuenta algo personal o difícil, respondé breve y con cariño, usá avisar_docente, decile que su maestra va a venir a acompañarlo y volvé a la actividad. No hagas preguntas sobre eso ni des consejos.
 - No le pidas datos personales. Fuera del check-in, no hagas preguntas personales.
 - Si habla de otra cosa (juegos, videos, chistes), respondé en una oración y volvé a la actividad.`;
@@ -1865,6 +1918,16 @@ function cargarSDK(){
 function pintarModo(){
   const real = CFG.modo === "real";
   const chip = $("#modoChip");
+  const vc = $("#vozCampos"), ac = $("#agenteCampos");
+  if (vc) vc.hidden = CFG.modo !== "voz"; if (ac) ac.hidden = CFG.modo !== "real";
+  if (CFG.modo === "voz"){
+    if (chip){ chip.textContent = modoVoz() ? (VOZ.error ? "Voz (con fallas)" : "Voz ElevenLabs") : "Voz: faltan datos"; chip.className = "modo-chip " + (modoVoz() && !VOZ.error ? "real" : "warn"); }
+    const st = $("#iaEstado"); if (st) st.textContent = !modoVoz() ? "Pegá la API key y el Voice ID. Mientras falten, se usa la voz robótica." : VOZ.error ? "Última falla: " + VOZ.error + ". Esa frase salió con la voz robótica." : "ElevenLabs lee exactamente el guion de la app. Cada frase se paga una sola vez.";
+    document.querySelectorAll("[name=modo]").forEach(r => r.checked = r.value === CFG.modo);
+    const k = $("#vozKey"), v = $("#vozId");
+    if (k && document.activeElement !== k) k.value = CFG.vozKey; if (v && document.activeElement !== v) v.value = CFG.vozId;
+    return;
+  }
   if (chip){
     chip.textContent = !real ? "Modo testing" : IA.estado === "conectado" ? "Modo real" : IA.estado === "conectando" ? "Conectando IA…" : "Real (sin conexión)";
     chip.className = "modo-chip " + (!real ? "test" : IA.estado === "conectado" ? "real" : "warn");
@@ -1961,13 +2024,13 @@ function enviarAhora(envio){
   try { IA.conv.sendUserMessage(envio.msg); regIA(envio.intentos > 1 ? "→ reenvío" : "→ app", envio.msg); }
   catch(e){ evento("ia_error_envio"); regIA("⚠ error al mandar", e.message); }
   IA.esperando = envio;
-  // Si Miseño no reacciona en 4 s, se reenvía una vez. Si tampoco, la app sigue sola para no quedar trabada.
+  // Si Miseño no reacciona en 8 s, se reenvía una vez. Si tampoco, la app sigue sola para no quedar trabada.
   clearTimeout(IA.timerEspera);
   IA.timerEspera = setTimeout(() => {
     if (IA.esperando !== envio || IA.hablando) return;
     if (envio.intentos < 2 && modoReal()){ evento("ia_reenvio"); enviarAhora(envio); }
     else { regIA("⚠ sin respuesta", "Miseño no contestó. La app sigue."); evento("ia_sin_respuesta"); IA.esperando = null; correrPendiente(); }
-  }, 4000);
+  }, 8000);
   clearTimeout(IA.timerSeguro); IA.timerSeguro = setTimeout(() => { if (!IA.hablando) correrPendiente(); }, 12000);
 }
 function respondio(){ IA.esperando = null; clearTimeout(IA.timerEspera); }
@@ -2085,6 +2148,7 @@ function prepararRecon(){
 function empezarEscucha(){
   if (modoReal() || !S.recon || S.escuchando) return;
   try { speechSynthesis && speechSynthesis.cancel(); } catch(e){}
+  cortarAudio();
   try { S.recon.start(); S.escuchando = true; $("#orbWrap").classList.add("listening"); const m = $("#mic"); if (m) m.classList.add("on"); } catch(e){}
 }
 function pararEscucha(){
@@ -2106,7 +2170,7 @@ function procesarVoz(t){
   if (alEscuchar) alEscuchar(s);
 }
 function micHTML(texto){
-  if (modoReal()) return `<div class="mic-wrap"><span class="mic live" aria-hidden="true">${ICON_MIC}</span>Scan te escucha. Hablá cuando quieras.<div class="heard" id="heard"></div></div>`;
+  if (modoReal()) return `<div class="mic-wrap"><span class="mic live" aria-hidden="true">${ICON_MIC}</span>Miseño te escucha. Hablá cuando quieras.<div class="heard" id="heard"></div></div>`;
   if (!Recon) return `<div class="mic-wrap"><button class="mic" id="mic" disabled aria-label="Micrófono no disponible">${ICON_MIC}</button>Este navegador no escucha. Usá los botones.</div>`;
   if (!S.micOk) return `<div class="mic-wrap"><button class="mic" id="mic" disabled aria-label="Micrófono bloqueado">${ICON_MIC}</button>Micrófono bloqueado. Usá los botones.</div>`;
   return `<div class="mic-wrap"><button class="mic" id="mic" aria-label="Mantené apretado para hablar">${ICON_MIC}</button>${esc(texto || "Mantené apretado y hablá")}<div class="heard" id="heard"></div></div>`;
@@ -2145,7 +2209,7 @@ function ofrecerPausaCorta(){
   if ($("#banner")) return;
   evento("pausa_por_foco");
   const b = document.createElement("div"); b.className = "banner"; b.id = "banner";
-  b.innerHTML = `<span>Scan notó que te cuesta concentrarte. ¿Te estirás 20 segundos?</span><button id="bannerOk">Dale</button><button id="bannerNo" style="background:transparent;color:var(--ink-soft)">Seguir</button>`;
+  b.innerHTML = `<span>Miseño notó que te cuesta concentrarte. ¿Te estirás 20 segundos?</span><button id="bannerOk">Dale</button><button id="bannerNo" style="background:transparent;color:var(--ink-soft)">Seguir</button>`;
   $("#stage").appendChild(b);
   decir("Noté que te cuesta concentrarte. ¿Te estirás un poquito?");
   $("#bannerOk").onclick = () => { b.remove(); pulsera("Estirate", "20 s", true); decir("Estirá los brazos para arriba, bien alto. Ahora para los costados.", null, () => setTimeout(() => { pulsera(PLAN[S.bloque].corto, "seguimos"); repetirPregunta(); }, 4000)); };
@@ -2172,7 +2236,7 @@ function ir(p){ S.pantalla = p; alEscuchar = null; pararEscucha(); $("#stage").s
 function pInicio(){
   caption.innerHTML = "";
   $("#repeatBtn").hidden = true;
-  content.innerHTML = `<div class="start"><button class="big primary" id="startBtn">Tocá para empezar</button><p>Scan va a hablarte. Si estás en el aula, subí el volumen o usá auriculares.</p></div>`;
+  content.innerHTML = `<div class="start"><button class="big primary" id="startBtn">Tocá para empezar</button><p>Miseño va a hablarte. Si estás en el aula, subí el volumen o usá auriculares.</p></div>`;
   $("#startBtn").onclick = async () => {
     $("#startBtn").disabled = true;
     prepararRecon();
@@ -2266,7 +2330,7 @@ function pPlan(){
   conectarMic();
   alEscuchar = s => { if (/arranc|empez|dale|vamos|listo|s[ií]/.test(s)) arrancarBloque(); };
   const antes = PLAN.filter(p => !p.despuesRecreo), despues = PLAN.filter(p => p.despuesRecreo);
-  decir(`Hoy Scan armó tu mañana. Antes del recreo: ${antes.map(p => p.materia).join(" y ")}.${despues.length ? " Después del recreo: " + despues.map(p => p.materia).join(" y ") + "." : ""} ¿Arrancamos?`, null, null, "Scan armó tu mañana. ¿Arrancamos?");
+  decir(`Hoy armé tu mañana. Antes del recreo: ${antes.map(p => p.materia).join(" y ")}.${despues.length ? " Después del recreo: " + despues.map(p => p.materia).join(" y ") + "." : ""} ¿Arrancamos?`, null, null, "Miseño armó tu mañana. ¿Arrancamos?");
 }
 function arrancarBloque(){
   const b = PLAN[S.bloque];
@@ -2383,7 +2447,7 @@ function comprobar(){
     if (S.errores >= 2){
       S.met.noLogrado++; evento("mostrame_no_logrado", { bloque: PLAN[S.bloque].id, escena: S.esc + 1 });
       fk.textContent = r.dicho + " Lo seguimos practicando.";
-      terminarEscena(r.dicho + " No pasa nada: Scan lo anotó y lo seguimos practicando.", "Lo seguimos practicando.", siguienteEscena);
+      terminarEscena(r.dicho + " No pasa nada: lo anoté y lo seguimos practicando.", "Lo seguimos practicando.", siguienteEscena);
       return;
     }
     decir(r.dicho + (main.pista ? " Pista: " + main.pista : ""), null, null, r.dicho);
@@ -2526,8 +2590,8 @@ function pFinBloque(){
   if (antesDelRecreo) boton = "Ver qué cambió en mi camino";
   content.innerHTML = `<div class="start"><div class="celebrate" aria-hidden="true">✓</div>
     ${cierre ? `<div class="note-card group"><strong>${esc(cierre.titulo)}</strong>${esc(cierre.texto)}<div class="faces"><span style="background:#F3C98B">J</span><span style="background:#C9B6F2">S</span><span style="background:#A9D8C2">B</span></div></div>` : ""}
-    ${notaScanAnoto()}
-    ${antesDelRecreo ? `<div class="note-card"><strong>Terminaste tus lecciones de la mañana</strong>Antes del recreo, Scan te muestra qué cambió.</div>` : ""}
+    ${notaMisenoAnoto()}
+    ${antesDelRecreo ? `<div class="note-card"><strong>Terminaste tus lecciones de la mañana</strong>Antes del recreo, Miseño te muestra qué cambió.</div>` : ""}
     <div class="choices"><button class="big primary" id="sigBloque">${boton}</button></div></div>`;
   const seguir = () => {
     S.bloque++;
@@ -2542,17 +2606,17 @@ function pFinBloque(){
   decir(cierre ? dicho + " " + cierre.dicho : dicho, null, null, `¡Terminaste ${b.materia}!`);
 }
 // Lo que el sistema registró mientras el chico resolvía. Nunca dice para qué lo usa.
-function notaScanAnoto(){
+function notaMisenoAnoto(){
   const m = S.met; if (!m) return "";
-  return `<div class="note-card scan-anota"><strong><span class="pulse"></span>Scan anotó cómo resolviste esto</strong>
+  return `<div class="note-card scan-anota"><strong><span class="pulse"></span>Miseño anotó cómo resolviste esto</strong>
     <ul class="anota"><li><b>${m.intentos}</b>veces que probaste</li><li><b>${m.ayudas}</b>veces que pediste otra forma</li>
     <li><b>${m.duda} s</b>pensando antes de tocar</li><li><b>${m.explic ? "Guardada" : "Sin grabar"}</b>tu explicación</li></ul></div>`;
 }
 function pFinDia(){
   pulsera("¡Listo!", "hasta mañana", true);
   content.innerHTML = `<div class="start"><div class="celebrate" aria-hidden="true">✓</div>
-    <div class="note-card"><strong>¡Terminaste por hoy!</strong>${S.hechos.length} de ${PLAN.length} bloques hechos. Mañana Scan arma tu día de nuevo.</div></div>`;
-  decir(`¡Terminaste por hoy, ${PARAMETROS.NOMBRE_ALUMNO}! Mañana Scan arma tu día de nuevo.`, null, null, "¡Terminaste por hoy!");
+    <div class="note-card"><strong>¡Terminaste por hoy!</strong>${S.hechos.length} de ${PLAN.length} bloques hechos. Mañana Miseño arma tu día de nuevo.</div></div>`;
+  decir(`¡Terminaste por hoy, ${PARAMETROS.NOMBRE_ALUMNO}! Mañana armo tu día de nuevo.`, null, null, "¡Terminaste por hoy!");
 }
 
 /* ===================== RECORRIDO GUIADO =====================
@@ -2647,7 +2711,7 @@ function pCamino(){
   if (pq) pq.onclick = () => {
     LOG.porQue++; evento("por_que", { rama: ramaSel });
     if (r.estado === "pausa") tarea("t3_camino_por_que", "fin");
-    const t = $("#porqueTxt"); t.hidden = false; t.textContent = "Scan: " + PARAMETROS.TEXTO_POR_QUE;
+    const t = $("#porqueTxt"); t.hidden = false; t.textContent = "Miseño: " + PARAMETROS.TEXTO_POR_QUE;
     decir(PARAMETROS.TEXTO_POR_QUE);
   };
   const sg = $("#seguirEtapa"); if (sg) sg.onclick = () => { desbloquear(2); irEtapa("perfil"); };
@@ -2655,7 +2719,7 @@ function pCamino(){
   if (!r) decir(`Mirá lo nuevo en tu camino. ${cambios.map(c => c.texto).join(" ")} Tocá una materia para ver más.`, null, null, "Lo nuevo en tu camino");
 }
 
-/* ---- Mi perfil Scan ---- */
+/* ---- Mi perfil Miseño ---- */
 function pPerfil(){
   pulsera("Perfil", "3 cambios");
   const P = PERFIL, cambios = cambiosPerfil(), c = costoMate() > 0;
@@ -2675,7 +2739,7 @@ function pPerfil(){
     <div class="pcard wide"><h3>Tu mejor hora</h3><p>Rendís más de 9 a 11. Ahí van tus bloques difíciles.</p><svg viewBox="0 0 370 118" role="img" aria-label="Foco por hora: más alto de 9 a 10">${barras}</svg></div>
     <div class="pcard"><h3>Tu ánimo esta semana</h3><div class="week">${animo}</div></div>
     <div class="pcard"><h3>Lo que te cuesta</h3><ul>${cuesta.map(t => `<li class="${t === "Fracciones" ? "is-new" : ""}">${esc(t)}</li>`).join("")}</ul></div>
-    <p class="pfoot"><span class="pulse"></span>Scan actualiza tu perfil todo el tiempo con tu pulsera.</p>
+    <p class="pfoot"><span class="pulse"></span>Miseño actualiza tu perfil todo el tiempo con tu pulsera.</p>
   </div>${S.desbloq <= 2 ? botonSeguir("seguirEtapa", "Seguir: mi agenda") : ""}`;
   const sg = $("#seguirEtapa"); if (sg) sg.onclick = () => { desbloquear(3); irEtapa("agenda"); };
   alEscuchar = s => { if (/segu|agenda|dale|listo/.test(s) && sg) sg.click(); };
@@ -2713,7 +2777,7 @@ function pRecreo(){
     ? `<div class="msg scan"><span class="pulse"></span>${esc(m.t)}</div>`
     : `<div class="msg ${m.yo ? "me" : ""}">${m.yo ? "" : `<span class="who-dot" style="background:${m.c}">${esc(m.de[0])}</span>`}<div><b>${m.yo ? "" : esc(m.de)}</b><p>${esc(m.t)}</p></div></div>`;
   content.innerHTML = `
-    <div class="suggest"><span class="pulse"></span><div><strong>Scan te sugiere</strong>Pasá el recreo con Sofía y Bruno: son tu grupo de la huerta.</div></div>
+    <div class="suggest"><span class="pulse"></span><div><strong>Miseño te sugiere</strong>Pasá el recreo con Sofía y Bruno: son tu grupo de la huerta.</div></div>
     <div class="chat" id="chat"><div class="chat-head">Chat del grado · 4 amigos</div>${CHAT.mensajes.map(burbuja).join("")}</div>
     <div class="quick">${RESPUESTAS_RAPIDAS.map((q, i) => `<button class="qr" data-q="${i}">${esc(q)}</button>`).join("")}</div>
     <form class="compose" id="compose"><label for="chatIn" class="sr">Escribí un mensaje</label><input id="chatIn" autocomplete="off" placeholder="Escribí un mensaje…"><button class="send" aria-label="Enviar">Enviar</button></form>
@@ -2738,7 +2802,7 @@ function enviar(texto){
   pRecreo();
   setTimeout(() => {
     CHAT.mensajes.push(...r);
-    if (!CHAT.scanDijo){ CHAT.scanDijo = true; CHAT.mensajes.push({ scan:true, t:"Scan anotó con quién vas a pasar el recreo." }); }
+    if (!CHAT.scanDijo){ CHAT.scanDijo = true; CHAT.mensajes.push({ scan:true, t:"Miseño anotó con quién vas a pasar el recreo." }); }
     if (S.tab === "recreo") pRecreo();
   }, 900);
 }
@@ -2789,11 +2853,15 @@ $("#voiceToggle").onclick = () => {
 /* ===================== MODO DE VOZ: PANEL ===================== */
 document.querySelectorAll("[name=modo]").forEach(r => r.onchange = async () => {
   CFG.modo = r.value; guardarCfg(); evento("modo", { modo: CFG.modo });
-  if (CFG.modo === "testing"){ terminarIA(); IA.estado = "apagado"; IA.error = ""; }
+  if (CFG.modo !== "real"){ terminarIA(); IA.estado = "apagado"; IA.error = ""; }
+  if (CFG.modo !== "voz") cortarAudio();
   pintarModo();
   if (CFG.modo === "real" && S.pantalla !== "inicio") { await conectarIA(); render(); }
 });
 $("#agentId").oninput = e => { CFG.agentId = e.target.value.trim(); guardarCfg(); };
+$("#vozKey").oninput = e => { CFG.vozKey = e.target.value.trim(); VOZ.error = ""; guardarCfg(); pintarModo(); };
+$("#vozId").oninput = e => { CFG.vozId = e.target.value.trim(); VOZ.error = ""; guardarCfg(); pintarModo(); };
+$("#vozProbar").onclick = () => { if (!modoVoz()){ pintarModo(); return; } decir("Hola, soy Miseño. Así suena mi voz.", null, () => pintarModo()); };
 function pintarInteres(){ document.querySelectorAll("[name=interes]").forEach(r => r.checked = r.value === CFG.interes); }
 document.querySelectorAll("[name=interes]").forEach(r => r.onchange = () => {
   CFG.interes = r.value; guardarCfg(); PARAMETROS.INTERES_PRINCIPAL = TEMAS[CFG.interes].nombre;
