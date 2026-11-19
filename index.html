@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Miseño · App del alumno</title>
 <!--
-  MISEÑO · APP DEL ALUMNO — prototipo v1.1
+  MISEÑO · APP DEL ALUMNO — prototipo v1.3
   Diseño Interactivo (UTDT) · escenario "Enseñanza Scan 360". Definición: https://claude.ai/artifact/6tipJiz2sJz1bDrqohDWve
-  Joaquín (11) pasa una mañana en Miseño con Guio, su tutor, que lo deriva con un profe por materia.
+  Joaquín, Sofía o Bruno pasan una mañana en Miseño con Guio, su tutor, que los deriva con un profe por materia.
   22 momentos, solo hacia adelante. Voz solo guionada: dice exactamente el texto de cada momento.
 
   Teclado: Enter acción principal · N no entiendo · R repetir · F panel de prueba · Shift+R reiniciar.
@@ -15,6 +15,11 @@
                        lectura de los sensores, copiar el registro.
 
   Versiones
+    v1.3 (19/11/2026): tres perfiles (Joaquín, Sofía, Bruno) con su día, sus clases y una clase integradora de la
+                       huerta con dos profes; profes nuevos Dona (Dibujo) y Rolo (Gastronomía), por ahora provisorios;
+                       anuncio del proyecto grupal. Perfil: tocar el avatar arriba de la línea del día, o el panel (F).
+    v1.2 (19/11/2026): composición centrada; cada momento toma el pastel de su personaje (Guio celeste,
+                       Numi rojo, Otto naranja, Fini verde, recreo amarillo).
     v1.1 (18/11/2026): personajes reales con 5 estados (Guio tutor, Numi Matemática, Otto Lengua, Fini Ciencias),
                        apertura con logo, animaciones de entrada y salida, relevo de profe y pregunta
                        metacognitiva al final de cada clase en vez de resultados.
@@ -28,15 +33,18 @@
 <style>
 /* Tonos por momento: fondo, suave, nodito, botón, texto (definición > Identidad visual) */
 :root{
-  --fondo:#F1EFE8; --suave:#D3D1C7; --nodo:#B4B2A9; --boton:#5F5E5A; --texto:#2C2C2A;
+  --fondo:#E8F6FC; --suave:#BEE6F6; --nodo:#36BDE6; --boton:#0B7DA3; --texto:#08374A;
   --blanco:#FFFFFF; --ok-bg:#E1F5EE; --ok-tx:#085041; --casi-bg:#FAEEDA; --casi-tx:#633806;
   --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace; --sans:"IBM Plex Sans", system-ui, sans-serif;
   --r-tarjeta:24px; --t-tono:800ms; --t-entra:400ms;
 }
-[data-tono="mate"]    {--fondo:#EEEDFE; --suave:#CECBF6; --nodo:#7F77DD; --boton:#534AB7; --texto:#26215C}
-[data-tono="lengua"]  {--fondo:#FAECE7; --suave:#F5C4B3; --nodo:#F0997B; --boton:#993C1D; --texto:#4A1B0C}
-[data-tono="recreo"]  {--fondo:#E1F5EE; --suave:#9FE1CB; --nodo:#5DCAA5; --boton:#0F6E56; --texto:#04342C}
-[data-tono="ciencias"]{--fondo:#E6F1FB; --suave:#B5D4F4; --nodo:#85B7EB; --boton:#185FA5; --texto:#042C53}
+[data-tono="mate"]    {--fondo:#FDEDEF; --suave:#F7C6CD; --nodo:#E4566A; --boton:#B42A3E; --texto:#4D0F19}
+[data-tono="lengua"]  {--fondo:#FEF1E6; --suave:#F9D0AE; --nodo:#EF8638; --boton:#A64E0E; --texto:#4A2309}
+[data-tono="recreo"]  {--fondo:#FDF7DE; --suave:#F4E29C; --nodo:#E2B41C; --boton:#7E6000; --texto:#3B2E00}
+[data-tono="dibujo"]  {--fondo:#F2EDFF; --suave:#D9CBFF; --nodo:#8A4FFF; --boton:#6131D6; --texto:#25104F}
+[data-tono="gastro"]  {--fondo:#FFEEF5; --suave:#FFC7DD; --nodo:#FF5FA2; --boton:#C42A6C; --texto:#4D0C29}
+[data-tono="huerta"]  {--fondo:#F2F8E4; --suave:#D5E9AE; --nodo:#8DBF3F; --boton:#4D7A12; --texto:#1F3307}
+[data-tono="ciencias"]{--fondo:#EBF7EC; --suave:#C0E6C8; --nodo:#42BE62; --boton:#1D7D3A; --texto:#0D3B1C}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{font-family:var(--sans);color:var(--texto);background:var(--fondo);transition:background-color var(--t-tono) ease, color var(--t-tono) ease;-webkit-font-smoothing:antialiased}
@@ -44,11 +52,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--boton);outline-offset:3px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
-.app{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+.app{display:grid;grid-template-columns:200px minmax(0,1fr) 200px;min-height:100vh;max-width:1400px;margin:0 auto}
 
 /* Línea de tiempo del día */
-.dia{padding:56px 0 40px 40px;position:relative}
-.dia ol{list-style:none;margin:0;padding:0;position:sticky;top:56px}
+.dia{padding:0 0 40px 40px;position:relative;display:flex;align-items:center}
+.dia ol{width:100%}
+.dia ol{list-style:none;margin:0;padding:0;position:sticky;top:calc(50vh - 180px)}
 .dia li{position:relative;padding:0 0 44px 30px;opacity:0;transform:translateY(8px);transition:opacity var(--t-entra), transform var(--t-entra)}
 .dia li.visible{opacity:1;transform:none}
 .dia li::before{content:"";position:absolute;left:5px;top:16px;bottom:-2px;width:2px;background:var(--suave);transition:background var(--t-tono)}
@@ -70,7 +79,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--boton);out
 .fases .ya{opacity:.6}
 
 /* Escenario */
-.main{padding:40px 48px 32px 24px;display:flex;flex-direction:column;gap:22px;max-width:980px;width:100%}
+.main{padding:40px 24px 32px;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:920px;width:100%;margin:0 auto;min-height:100vh}
 .voz{display:grid;grid-template-columns:124px minmax(0,1fr) auto;align-items:center;gap:20px;min-height:110px;position:sticky;top:0;z-index:5;background:var(--fondo);padding:12px 0;transition:background-color var(--t-tono)}
 /* Personajes: imagen por estado; el cuerpo respira, al hablar se mece, al festejar salta */
 .mascota{width:124px;height:124px;position:relative}
@@ -118,6 +127,113 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--boton);out
 .principal.sale,.noent.sale{animation:saleBtn .2s ease-in forwards;pointer-events:none}
 @keyframes saleBtn{to{opacity:0;transform:translateY(8px) scale(.94)}}
 .principal.tic{animation:tic .25s ease}
+/* Dos profes en el encabezado (clases integradoras) */
+.mascotas{position:relative;width:124px;height:124px}
+.voz.duo{grid-template-columns:200px minmax(0,1fr) auto}
+.voz.duo .mascotas{width:200px}
+.voz.duo .mascota{width:110px;height:110px;position:absolute;top:8px}
+.voz.duo #mascota{left:0}
+.voz.duo #mascota2{left:88px}
+.mascota[hidden]{display:none}
+/* Perfil escondido: avatar del chico */
+.yo-caja{position:absolute;top:28px;left:40px}
+.yo{width:34px;height:34px;border-radius:50%;border:none;background:var(--suave);color:var(--texto);font-weight:600;font-size:15px;opacity:.55;transition:opacity .2s, background var(--t-tono)}
+.yo:hover,.yo:focus-visible{opacity:1}
+.perfiles{position:absolute;top:42px;left:0;z-index:15;background:var(--blanco);border-radius:18px;padding:8px;box-shadow:0 18px 40px -18px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:2px;min-width:190px}
+.perfiles[hidden]{display:none}
+.perfiles button{display:grid;grid-template-columns:32px 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:left;border:none;background:transparent;border-radius:12px;padding:8px 10px;font-size:16px}
+.perfiles button:hover{background:var(--fondo)}
+.perfiles button[aria-current]{background:var(--fondo);font-weight:600}
+.perfiles i{grid-row:span 2;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-style:normal;background:var(--suave);font-weight:600}
+.perfiles small{font-family:var(--mono);font-size:12px;opacity:.65;font-weight:400}
+.dia .sub{font-family:var(--mono);font-size:12px;opacity:.6;margin-top:1px}
+.plan small{font-weight:400;opacity:.7;font-size:15px}
+/* Widgets nuevos */
+.caja{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px}
+.contador-w{display:flex;align-items:center;gap:12px;justify-content:center}
+.contador-w .cw-lbl{font-family:var(--mono);font-size:15px;opacity:.75;margin-right:4px}
+.contador-w button{width:48px;height:48px;border-radius:50%;border:1.5px solid var(--suave);background:var(--blanco);font-size:24px;line-height:1}
+.contador-w b{min-width:72px;text-align:center;font-family:var(--mono);font-size:24px;font-weight:500}
+.vista{width:100%;display:flex;justify-content:center}
+.vista svg{width:100%;max-width:420px;height:auto}
+.vista.tocable [data-p]{cursor:pointer;transition:opacity .2s, filter .2s}
+.vista.tocable:has(.brilla) [data-p]:not(.brilla){opacity:.35}
+.brilla{filter:drop-shadow(0 0 6px rgba(255,255,255,.9))}
+.dos-vistas{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
+.dos-vistas .vista{background:var(--fondo);border-radius:18px;min-height:150px;align-items:center}
+.marcador{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;width:100%}
+.marcador-tit{display:none}
+.marcador li{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center}
+.mnum{font-family:var(--mono);font-size:14px;opacity:.75;text-align:right}
+.marcador .slot{min-height:58px;padding:6px}
+.marcador .carta,.parches .carta{padding:10px 14px;font-size:16px}
+.parches{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;width:100%}
+.parches .slot{min-height:110px}
+.pasos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;width:100%;max-width:440px}
+.pasos li{padding:14px 18px;border-radius:16px;background:var(--fondo);font-size:19px;font-weight:500;display:flex;justify-content:space-between;align-items:center;animation:aparece .5s ease both}
+.pasos small{font-family:var(--mono);font-size:13px;font-weight:400;opacity:.7}
+.receta-tit{font-size:22px;font-weight:500;margin:0}
+.lista-pasos{margin:0;padding:0 0 0 28px;display:flex;flex-direction:column;gap:8px;width:100%;max-width:520px}
+.lista-pasos li{padding-left:6px}
+.lista-pasos button{width:100%;text-align:left;border:2px solid var(--suave);background:var(--blanco);border-radius:14px;padding:12px 16px;font-size:17px}
+.lista-pasos button.sel,.exp.sel{border-color:#EF9F27;background:var(--casi-bg)}
+.lista-pasos button.bien,.exp.bien{border-color:#3DAA7A;background:var(--ok-bg)}
+.huerta{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:16px;border-radius:20px;background:#E9D9C3;width:100%}
+.cantero{aspect-ratio:1;border:none;border-radius:16px;background:#C9A27A;display:grid;place-items:center;color:#7A5A2E;padding:4px}
+.cantero svg{width:100%;height:100%}
+.cantero.tomate svg,.cantero.lechuga svg,.cantero.albahaca svg{animation:pop .35s cubic-bezier(.3,1.5,.5,1)}
+.leyenda{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;font-size:16px}
+.leyenda span{display:inline-flex;align-items:center;gap:6px}
+.leyenda svg{width:26px;height:26px}
+.leyenda b{font-family:var(--mono)}
+.leyenda .vac{opacity:.7}
+.tomateras{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:110px}
+.tomateras svg{width:64px;height:80px;animation:pop .4s cubic-bezier(.3,1.5,.5,1)}
+.reparto{display:grid;grid-template-columns:120px 1fr;gap:20px;width:100%;align-items:end}
+.pila{display:flex;flex-direction:column;align-items:center;gap:6px}
+.pila small{font-family:var(--mono);font-size:13px;opacity:.75}
+.pila-p{display:flex;flex-direction:column-reverse;align-items:center;min-height:40px}
+.pila-p svg{width:64px;height:16px;margin-top:-6px}
+.platos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.plato{border:2px solid var(--suave);background:var(--blanco);border-radius:50% 50% 24px 24px/20% 20% 24px 24px;min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;padding:10px}
+.plato span{font-family:var(--mono);font-size:18px}
+.receta{display:flex;flex-direction:column;gap:8px;width:100%;max-width:640px}
+.rfila{display:grid;grid-template-columns:110px 1fr 1.4fr;gap:12px;align-items:center;padding:10px 14px;border-radius:16px;background:var(--fondo)}
+.rcab{background:transparent;font-family:var(--mono);font-size:14px;opacity:.75;padding:0 14px}
+.rnomb{font-weight:500;font-size:18px}
+.rbase,.rnuevo{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:16px;flex-wrap:wrap}
+.rbase i,.rnuevo i{display:inline-flex;gap:3px;color:var(--nodo)}
+.taza{width:22px;height:22px}
+.rnuevo .contador-w{justify-content:flex-start}
+.rnuevo .contador-w b{min-width:110px;font-size:17px}
+.rnuevo .contador-w button{width:40px;height:40px}
+.aparece-v{animation:late .45s cubic-bezier(.3,1.4,.5,1) both;font-weight:500}
+.problema{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%}
+.problema p{margin:0;padding:16px;border-radius:18px;background:var(--fondo);font-size:16px;line-height:1.3}
+.problema b{display:block;font-family:var(--mono);font-size:32px;font-weight:500}
+.pregunta.chica{font-size:22px}
+.experimentos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%}
+.exp{border:2px solid var(--suave);background:var(--blanco);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:8px;text-align:left;font-size:15px}
+.exp.corta{font-size:18px;justify-content:center;text-align:center;min-height:90px}
+.maceta{border-radius:12px;background:var(--fondo);padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.maceta small{font-family:var(--mono);font-size:12px;opacity:.7}
+.maceta span{display:flex;align-items:center;gap:6px}
+.maceta span svg{width:16px;height:16px}
+.maceta span.no{opacity:.6;text-decoration:line-through}
+.grupo3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:100%;max-width:640px}
+.chico{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 10px;border-radius:20px;background:var(--fondo);text-align:center;animation:aparece .5s ease both}
+.chico:nth-child(2){animation-delay:.12s}.chico:nth-child(3){animation-delay:.24s}
+.chico i{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:26px;font-weight:600;background:var(--blanco);color:var(--boton)}
+.chico b{font-size:19px;font-weight:500}
+.chico small{font-size:15px;opacity:.8}
+.chico.yo-c{outline:2px solid var(--boton)}
+.relevo .rimgs{display:flex;gap:6px}
+.relevo .rimgs img:nth-child(2){animation-delay:.15s}
+.capas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;width:100%;align-items:start}
+.capas .vista{background:var(--fondo);border-radius:18px;min-height:230px;align-items:center;padding:10px}
+.capas .vacio{font-family:var(--mono);font-size:14px;opacity:.6;margin:0}
+.capas .marcador .slot{min-height:46px}
+.parches .slot-lbl{font-family:var(--sans);font-size:14px;opacity:.85}
 /* Pregunta de cierre */
 .pregunta{font-size:28px;font-weight:500;margin:0;text-align:center;max-width:24ch;text-wrap:balance}
 .escala{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;width:100%;max-width:720px;align-items:end}
@@ -142,7 +258,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--boton);out
 @keyframes fundido{from{opacity:0}}
 @keyframes fundidoSale{to{opacity:0}}
 /* Apertura */
-.apertura{position:fixed;inset:0;z-index:30;background:#F1EFE8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.apertura{position:fixed;inset:0;z-index:30;background:#E8F6FC;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .apertura .logo{width:210px;height:auto;animation:pop .9s .1s cubic-bezier(.3,1.4,.5,1) both}
 .apertura h1{font-size:72px;font-weight:600;letter-spacing:-.02em;margin:8px 0 34px;display:flex}
 .apertura h1 span{display:inline-block;animation:letra .5s cubic-bezier(.2,.9,.3,1.3) both;animation-delay:calc(.55s + var(--k) * 70ms)}
@@ -302,8 +418,13 @@ body.arranca .acciones{animation-delay:.5s}
 .panel .meta{font-size:12px;color:#5F5E5A}
 .panel pre{white-space:pre-wrap;background:#F1EFE8;border-radius:10px;padding:8px;font:12px/1.4 var(--mono);max-height:140px;overflow:auto;margin:0}
 
+@media (max-width:1200px) and (min-width:901px){
+  .app{grid-template-columns:190px minmax(0,1fr) 32px}
+}
 @media (max-width:900px){
   .app{grid-template-columns:minmax(0,1fr)}
+  .main{min-height:0;justify-content:flex-start}
+  .dia{display:block}
   .main{min-width:0}
   .dia{padding:18px 18px 0}
   .dia ol{position:static;display:flex;gap:14px;overflow-x:auto}
@@ -313,6 +434,18 @@ body.arranca .acciones{animation-delay:.5s}
   .main{padding:16px}
   .voz .repetir{grid-column:2;justify-self:start}
   .mascota{width:76px;height:76px}
+  .mascotas{width:76px;height:76px}
+  .voz.duo{grid-template-columns:120px minmax(0,1fr)}
+  .voz.duo .mascotas{width:120px}
+  .voz.duo .mascota{width:70px;height:70px}
+  .voz.duo #mascota2{left:50px}
+  .yo-caja{position:static;margin-bottom:8px}
+  .huerta{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .experimentos,.problema,.grupo3,.dos-vistas{grid-template-columns:1fr}
+  .reparto,.capas{grid-template-columns:1fr}
+  .platos{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rfila{grid-template-columns:1fr}
+  .marcador li{grid-template-columns:64px 1fr}
   .voz{grid-template-columns:76px minmax(0,1fr)}
   .escala{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
   .paso{font-size:12px;min-height:130px;padding:12px 2px;border-radius:14px}
@@ -340,10 +473,10 @@ body.arranca .acciones{animation-delay:.5s}
   <button class="principal" id="empezar">Empezar</button>
 </div>
 <div class="app">
-  <nav class="dia" aria-label="Tu día"><ol id="dia"></ol></nav>
+  <nav class="dia" aria-label="Tu día"><div class="yo-caja"><button class="yo" id="yo"></button><div class="perfiles" id="perfiles" hidden></div></div><ol id="dia"></ol></nav>
   <main class="main">
     <header class="voz">
-      <div class="mascota" id="mascota" aria-hidden="true"></div>
+      <div class="mascotas"><div class="mascota" id="mascota" aria-hidden="true"></div><div class="mascota m2" id="mascota2" aria-hidden="true" hidden></div></div>
       <p class="subtitulo" id="subtitulo" aria-live="polite"><span class="quien" id="quien"></span><span id="sub"></span></p>
       <button class="repetir" id="repetir" hidden aria-label="Repetir lo que dijo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Repetir</button>
     </header>
@@ -370,9 +503,10 @@ body.arranca .acciones{animation-delay:.5s}
   <label><input type="radio" name="voz" value="navegador"> Voz del navegador (gratis)</label>
   <label><input type="radio" name="voz" value="muda"> Sin voz (solo subtítulos)</label>
   <div class="meta" id="pVoz"></div>
-  <h3>Lectura de los sensores</h3>
-  <label><input type="radio" name="sensor" value="nervioso"> Nervioso y durmió poco</label>
-  <label><input type="radio" name="sensor" value="contento"> Contento y durmió bien</label>
+  <h3>Perfil (reinicia el día)</h3>
+  <label><input type="radio" name="perfil" value="joaquin"> Joaquín, 8: fútbol, le cuestan las fracciones</label>
+  <label><input type="radio" name="perfil" value="sofia"> Sofía, 8: dibujo y animales, le cuesta leer</label>
+  <label><input type="radio" name="perfil" value="bruno"> Bruno, 10: cocina, le cuesta medir y repartir</label>
   <h3>Registro</h3>
   <div class="fila"><button id="pCopiar">Copiar registro (JSON)</button></div>
   <pre id="pLog"></pre>
@@ -384,21 +518,16 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", 
 const espera = ms => { const tok = S.tok; return new Promise(r => setTimeout(() => { if (tok === S.tok) r(); }, ms)); };
 
 /* ===================== PARÁMETROS ===================== */
-const ALUMNO = "Joaquín";
-const DIA = [
-  { id:"mate", nombre:"Matemática", hora:"8:30", c:"#7F77DD" },
-  { id:"lengua", nombre:"Lengua", hora:"9:30", c:"#F0997B" },
-  { id:"recreo", nombre:"Recreo", hora:"10:20", c:"#5DCAA5" },
-  { id:"ciencias", nombre:"Ciencias", hora:"10:40", c:"#85B7EB" }
-];
-const MANANA_FACIL = [ { n:"Lengua", h:"8:30", c:"#F0997B" }, { n:"Matemática", h:"9:30", c:"#7F77DD" }, { n:"Recreo", h:"10:20", c:"#5DCAA5" }, { n:"Ciencias", h:"10:40", c:"#85B7EB" }, { n:"Ciencias: la huerta", h:"11:30", c:"#85B7EB" } ];
-const MANANA_COSTO = [ { n:"Matemática", h:"8:30", c:"#7F77DD" }, { n:"Lengua", h:"9:30", c:"#F0997B" }, { n:"Recreo", h:"10:20", c:"#5DCAA5" }, { n:"Matemática: repaso de tercios", h:"10:40", c:"#7F77DD" }, { n:"Ciencias", h:"11:30", c:"#85B7EB" } ];
+// El chico y su día salen del perfil elegido (perfiles.js).
+let ALUMNO = "Joaquín", DIA = [];
 // Guio es el tutor principal (la clave interna sigue siendo "miseno"); un profe por materia.
 const PERSONAS = {
   miseno:   { nombre:"Guio", materia:"Tu tutor", img:"guio", pitch:1.0 },
   mate:     { nombre:"Numi", materia:"Matemática", img:"numi", pitch:1.25 },
   lengua:   { nombre:"Otto", materia:"Lengua", img:"otto", pitch:0.92 },
-  ciencias: { nombre:"Fini", materia:"Ciencias", img:"fini", pitch:1.12 }
+  ciencias: { nombre:"Fini", materia:"Ciencias", img:"fini", pitch:1.12 },
+  dibujo:   { nombre:"Dona", materia:"Dibujo", img:"dona", pitch:1.18 },
+  gastro:   { nombre:"Rolo", materia:"Gastronomía", img:"rolo", pitch:0.98 }
 };
 const ESTADOS = ["reposo", "habla", "piensa", "festeja", "anima"];
 const imgDe = (quien, estado) => `img/${PERSONAS[quien].img}-${estado}.webp`;
@@ -407,7 +536,7 @@ Object.keys(PERSONAS).forEach(q => ESTADOS.forEach(e => { const i = new Image();
 
 /* ===================== CONFIG Y REGISTRO ===================== */
 const CFG_KEY = "miseno-v1-config", LOG_KEY = "miseno-v1-registro";
-const CFG = (() => { try { return Object.assign({ voz:"eleven", sensor:"nervioso", vozIds:{} }, JSON.parse(localStorage.getItem(CFG_KEY)) || {}); } catch(e){ return { voz:"eleven", sensor:"nervioso", vozIds:{} }; } })();
+const CFG = (() => { try { return Object.assign({ voz:"eleven", perfil:"joaquin", vozIds:{} }, JSON.parse(localStorage.getItem(CFG_KEY)) || {}); } catch(e){ return { voz:"eleven", perfil:"joaquin", vozIds:{} }; } })();
 const guardarCfg = () => { try { localStorage.setItem(CFG_KEY, JSON.stringify(CFG)); } catch(e){} };
 const LOG = { sesion: new Date().toISOString(), eventos: [], notas: [] };
 function guardarLog(){ try { localStorage.setItem(LOG_KEY, JSON.stringify(LOG)); } catch(e){} pintarLog(); }
@@ -490,25 +619,33 @@ function repetir(){ if (ultimo){ evento("repetir"); decir(ultimo.texto, ultimo.o
    Cinco estados por personaje: reposo, habla, piensa (mientras el chico resuelve), festeja (acierto),
    anima (error o pedido de ayuda). Al cambiar de personaje, el que se va sale y el nuevo entra. */
 let PERSONA_ACTUAL = "miseno";
-const MASC = { q:null, e:null, t:0 };
+const MASC = { a:{ q:null, e:null, t:0 }, b:{ q:null, e:null, t:0 } };
 function reanimar(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
-function mascota(quien, estado){
+// En las clases integradoras hay dos profes: el segundo va en el lugar b.
+const lugarDe = quien => { const m = M(); return m && m.duo && m.duo[1] === quien ? "b" : "a"; };
+function mascota(quien, estado, lugar){
   estado = ESTADOS.includes(estado) ? estado : "reposo";
-  const el = $("#mascota");
+  lugar = lugar || lugarDe(quien);
+  const el = $(lugar === "b" ? "#mascota2" : "#mascota"), X = MASC[lugar];
   if (!el.firstChild) el.innerHTML = `<div class="cuerpo"><img alt=""></div>`;
   const img = el.querySelector("img");
   el.dataset.estado = estado;
-  if (MASC.q !== quien){
-    const primera = MASC.q === null, t = ++MASC.t; MASC.q = quien; MASC.e = estado;
+  if (X.q !== quien){
+    const primera = X.q === null, t = ++X.t; X.q = quien; X.e = estado;
     if (primera){ img.src = imgDe(quien, estado); reanimar(img, "pop"); return; }
     img.classList.remove("pop", "tic"); img.classList.add("sale");
-    setTimeout(() => { if (t !== MASC.t) return; img.classList.remove("sale"); img.src = imgDe(MASC.q, MASC.e); reanimar(img, "pop"); }, 230);
+    setTimeout(() => { if (t !== X.t) return; img.classList.remove("sale"); img.src = imgDe(X.q, X.e); reanimar(img, "pop"); }, 230);
     return;
   }
-  if (MASC.e !== estado){ MASC.e = estado; MASC.t++; img.classList.remove("sale"); img.src = imgDe(quien, estado); reanimar(img, "tic"); }
+  if (X.e !== estado){ X.e = estado; X.t++; img.classList.remove("sale"); img.src = imgDe(quien, estado); reanimar(img, "tic"); }
+}
+function duo(m){
+  const v = $(".voz"), b = $("#mascota2");
+  if (m.duo){ v.classList.add("duo"); b.hidden = false; mascota(m.duo[0], S.quieto, "a"); mascota(m.duo[1], S.quieto, "b"); }
+  else { v.classList.remove("duo"); b.hidden = true; MASC.b.q = null; b.innerHTML = ""; mascota(m.quien || "miseno", S.quieto, "a"); }
 }
 function ponerQuien(quien){
-  const q = $("#quien"), p = PERSONAS[quien], t = quien === "miseno" ? p.nombre : `${p.nombre} · ${p.materia}`;
+  const q = $("#quien"), p = PERSONAS[quien], m = M(), t = quien === "miseno" ? p.nombre : `${p.nombre} · ${m && m.duo ? "Huerta" : p.materia}`;
   if (q.textContent !== t){ q.textContent = t; reanimar(q, "sube"); }
 }
 function ponerSub(texto){ const s = $("#sub"); s.textContent = texto; reanimar(s, "sube"); }
@@ -524,9 +661,9 @@ function escalonar(){
   tarjeta().querySelectorAll(".opciones,.escala,.amigos,.cambios ul,.anotado").forEach(g => [...g.children].forEach((c, k) => c.style.setProperty("--i", k)));
 }
 // Relevo: cuando arranca una materia, su profe se presenta en grande.
-async function relevo(quien){
-  const o = $("#relevo"), p = PERSONAS[quien];
-  o.innerHTML = `<img src="${imgDe(quien, "festeja")}" alt=""><p class="rnom">${p.nombre}</p><p class="rmat">Tu profe de ${p.materia}</p>`;
+async function relevo(m){
+  const o = $("#relevo"), q = m.duo || [m.quien], ps = q.map(k => PERSONAS[k]);
+  o.innerHTML = `<div class="rimgs">${q.map(k => `<img src="${imgDe(k, "festeja")}" alt="">`).join("")}</div><p class="rnom">${ps.map(p => p.nombre).join(" y ")}</p><p class="rmat">${m.duo ? "Clase de la huerta" : "Tu profe de " + ps[0].materia}</p>`;
   o.hidden = false; o.classList.remove("sale"); reanimar(o, "on");
   await espera(1700);
   o.classList.add("sale"); await espera(380); o.hidden = true;
@@ -540,7 +677,7 @@ function pintarDia(){
   ol.innerHTML = DIA.map((d, k) => {
     const estado = S.hechos.includes(d.id) ? "hecho" : m.nodo === d.id ? "actual" : "pendiente";
     const fases = estado === "actual" && m.fase ? `<ul class="fases" aria-label="Momentos de la clase">${FASES.map((f, j) => { const fi = FASES.indexOf(m.fase); return `<li class="${j < fi ? "ya" : j === fi ? "ahora" : ""}"${j === fi ? ' aria-current="step"' : ""}><i></i>${f}</li>`; }).join("")}</ul>` : "";
-    return `<li class="${estado} visible" style="--c:${d.c}" data-k="${k}"><span class="pto"></span><div class="nom">${d.nombre}</div><div class="hora">${d.hora}</div>${fases}</li>`;
+    return `<li class="${estado} visible" style="--c:${d.c}" data-k="${k}"><span class="pto"></span><div class="nom">${d.nombre}</div>${d.sub ? `<div class="sub">${d.sub}</div>` : ""}<div class="hora">${d.hora}</div>${fases}</li>`;
   }).join("");
 }
 
@@ -571,8 +708,8 @@ function montar(i){
   const vieja = tarjeta(), nueva = vieja.cloneNode(false); nueva.classList.remove("sale"); vieja.replaceWith(nueva);
   evento("momento", { n: i + 1, nombre: m.nombre });
   pintarMeta();
-  const arrancar = () => { mascota(PERSONA_ACTUAL, S.quieto); verBoton($("#noent"), !!m.ayuda); m.entrar(); escalonar(); };
-  if (m.fase === "Explorar") relevo(m.quien).then(arrancar); else arrancar();
+  const arrancar = () => { duo(m); verBoton($("#noent"), !!m.ayuda); m.entrar(); escalonar(); };
+  if (m.fase === "Explorar") relevo(m).then(arrancar); else arrancar();
 }
 function siguiente(){ if (S.i < MOMENTOS.length - 1) mostrar(S.i + 1); }
 // Un solo botón principal por pantalla.
@@ -610,13 +747,82 @@ async function demostrar(m){
   evento("demostracion");
   if (m.demo) await m.demo(); else await decir(m.demoTexto);
 }
-async function acertar(m, texto){
+async function acertar(m, texto, op){
   const mt = metricas(); registrar("logró", m.nombre);
   devolucion(texto, "ok"); S.quieto = "reposo";
   principal("Seguir", siguiente); $("#principal").classList.add("espera");
-  await decir(texto, { estado:"festeja" });
+  await decir(texto, Object.assign({ estado:"festeja" }, op));
   $("#principal").classList.remove("espera");
 }
+
+/* ===================== PERFILES =====================
+   Tres chicos del mismo grado. Cada uno tiene su día, sus clases y lo que Miseño sabe de él.
+   Al final del día, Guio les anuncia el proyecto que van a hacer juntos: el recetario de la huerta. */
+const C = { mate:"#E4566A", lengua:"#EF8638", recreo:"#E2B41C", ciencias:"#42BE62", dibujo:"#8A4FFF", gastro:"#FF5FA2", huerta:"#8DBF3F" };
+const PROYECTO = { nombre:"El recetario de la huerta", h:"8:30" };
+const PERFILES = {
+  joaquin: {
+    nombre:"Joaquín", edad:8, inicial:"J",
+    sensor:{ animo:"Un poco nervioso", sueno:"5 h 40 min, poco", malo:true, registro:"nervioso, durmió poco",
+      dicho:"Mis sensores detectan que estás un poco nervioso y que dormiste poco. Vamos a ir de a poco." },
+    dia:[ { id:"mate", nombre:"Matemática", hora:"8:30", c:C.mate }, { id:"lengua", nombre:"Lengua", hora:"9:30", c:C.lengua },
+          { id:"recreo", nombre:"Recreo", hora:"10:20", c:C.recreo }, { id:"huerta", nombre:"Huerta", sub:"Numi y Fini", hora:"10:40", c:C.huerta } ],
+    lecciones:["mateJ", "lenguaJ", "huertaJ"],
+    amigos:["Sofía", "Bruno"],
+    costo: () => costoEn("mate") || costoEn("huerta") || dijo("mate", v => v >= 4),
+    recreoMotivo: costo => costo ? "Sofía resolvió rápido las fracciones y te puede ayudar." : "Anoté que con ellos tu ánimo sube.",
+    cambios: costo => ({
+      camino: costo ? ["Matemática pasa al primer horario", "Nuevo: repaso de fracciones con Numi"] : ["Una clase más de Lengua por semana"],
+      perfil: [costo ? "Fracciones: en progreso" : "Fracciones: las resolviste bien", "Leer y contar historias: tu fuerte", "Te concentrás mejor con Sofía y Bruno"],
+      porque: costo ? (costoEn("mate") || costoEn("huerta") ? "Te costaron las fracciones de la huerta, así que mañana Matemática va primero." : "Me dijiste que Matemática te pareció difícil, así que mañana va primero.")
+                    : "Te fue bien con las fracciones, así que esta semana sumé más Lengua, que es lo que más te gusta."
+    }),
+    rol:"Vos vas a escribir las recetas, porque contás muy bien las cosas. Sofía te va a ayudar con las cantidades.",
+    manana: costo => [ { n:"Proyecto: " + PROYECTO.nombre, h:"8:30", c:C.huerta }, { n: costo ? "Matemática: repaso de fracciones" : "Lengua", h:"9:30", c: costo ? C.mate : C.lengua }, { n:"Recreo", h:"10:20", c:C.recreo }, { n:"Ciencias", h:"10:40", c:C.ciencias } ]
+  },
+  sofia: {
+    nombre:"Sofía", edad:8, inicial:"S",
+    sensor:{ animo:"Contenta", sueno:"9 h 10 min, bien", malo:false, registro:"contenta, durmió bien",
+      dicho:"Mis sensores detectan que estás contenta y que dormiste bien. Hoy te preparé desafíos." },
+    dia:[ { id:"dibujo", nombre:"Dibujo", hora:"8:30", c:C.dibujo }, { id:"mate", nombre:"Matemática", hora:"9:30", c:C.mate },
+          { id:"recreo", nombre:"Recreo", hora:"10:20", c:C.recreo }, { id:"huerta", nombre:"Huerta", sub:"Fini y Dona", hora:"10:40", c:C.huerta } ],
+    lecciones:["dibujoS", "mateS", "huertaS"],
+    amigos:["Joaquín", "Bruno"],
+    costo: () => costoEn("mate") || dijo("mate", v => v >= 4),
+    recreoMotivo: () => "Joaquín cuenta muy bien las historias y a Bruno le encanta la huerta.",
+    cambios: costo => ({
+      camino: [ "Nuevo: lectura con Otto, mañana a primera hora", costo ? "Matemática: seguimos con fracciones" : "Matemática: pasás a fracciones más difíciles" ],
+      perfil: [ costo ? "Fracciones: en progreso" : "Fracciones: vas adelantada", "Dibujo: tu fuerte", "Leer y escribir: hay que practicar" ],
+      porque: costo ? "Las fracciones de hoy te costaron un poco, así que las seguimos practicando. Y como leer también te cuesta, mañana empezás con Otto."
+                    : "Resolviste rápido las fracciones, así que subo el nivel. Leer te cuesta un poco más, así que mañana empezás con Otto."
+    }),
+    rol:"Vos vas a ilustrar el recetario y a ayudar con las cuentas, que te salen muy bien. Joaquín va a escribir las recetas.",
+    manana: () => [ { n:"Lengua: lectura con Otto", h:"8:30", c:C.lengua }, { n:"Proyecto: " + PROYECTO.nombre, h:"9:30", c:C.huerta }, { n:"Recreo", h:"10:20", c:C.recreo }, { n:"Dibujo", h:"10:40", c:C.dibujo } ]
+  },
+  bruno: {
+    nombre:"Bruno", edad:10, inicial:"B",
+    sensor:{ animo:"Cansado", sueno:"6 h 05 min, poco", malo:true, registro:"cansado, durmió poco",
+      dicho:"Mis sensores detectan que estás cansado. Arrancamos con algo que te gusta: cocinar." },
+    dia:[ { id:"gastro", nombre:"Gastronomía", hora:"8:30", c:C.gastro }, { id:"ciencias", nombre:"Ciencias", hora:"9:30", c:C.ciencias },
+          { id:"recreo", nombre:"Recreo", hora:"10:20", c:C.recreo }, { id:"huerta", nombre:"Huerta", sub:"Numi y Rolo", hora:"10:40", c:C.huerta } ],
+    lecciones:["gastroB", "cienciasB", "huertaB"],
+    amigos:["Joaquín", "Sofía"],
+    costo: () => costoEn("huerta") || dijo("huerta", v => v <= 2),
+    recreoMotivo: () => "Te sugiero moverte un poco: estás cansado y con ellos siempre jugás a la mancha.",
+    cambios: costo => ({
+      camino: [ costo ? "Nuevo: medidas y porciones con Numi" : "Gastronomía: pasás a recetas para todo el grado", "Ciencias: el experimento de la huerta sigue mañana" ],
+      perfil: [ "Experimentos: tu fuerte", costo ? "Medir y repartir: en progreso" : "Medir y repartir: lo resolviste bien", "Rendís más cuando dormís bien" ],
+      porque: costo ? "Te costó calcular las porciones, así que mañana sumé una clase de medidas con Numi."
+                    : "Calculaste bien las porciones, así que ya podés cocinar para todo el grado."
+    }),
+    rol:"Vos vas a elegir qué se cocina con lo que da la huerta, porque sabés cómo crecen las plantas. Sofía te va a ayudar a medir.",
+    manana: costo => [ { n:"Proyecto: " + PROYECTO.nombre, h:"8:30", c:C.huerta }, { n: costo ? "Matemática: medidas y porciones" : "Gastronomía", h:"9:30", c: costo ? C.mate : C.gastro }, { n:"Recreo", h:"10:20", c:C.recreo }, { n:"Ciencias: sigue el experimento", h:"10:40", c:C.ciencias } ]
+  }
+};
+const costoEn = id => { const m = S.met[id]; return !!m && (m.errores + m.ayudas) > 0; };
+const dijo = (id, f) => !!S.meta[id] && f(S.meta[id].valor);
+let P = PERFILES[CFG.perfil] || PERFILES.joaquin;
+ALUMNO = P.nombre; DIA = P.dia;
 
 function svgPt(svg, ev){
   const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
@@ -733,25 +939,25 @@ function pastoSVG(res, x0, x1, yb, hmax, t){
   return h;
 }
 function wSim(cfg, ctx){
-  const fijos = cfg.fijos || {};
+  const fijos = cfg.fijos || {}, TX = Object.assign({ cosa:"el pasto", sombra:"Sombra de la tribuna", sombraCorta:"tribuna", tapado:"Tapado con lona", tapadoCorto:"lona", aria:"Simulador del pasto de la cancha" }, cfg.textos || {});
   const base = { luz:true, agua:true, aire:true, lampara:false };
   let st = Object.assign({}, base, cfg.inicio || {}, fijos, { dias:0, corrido:false }), t = 0, anim = null, quieto = false, root, svg, enCurso = false;
   const TOGS = [
-    { k:"luz", ic:"sol", si:"Sol", no:"Sombra de la tribuna" },
+    { k:"luz", ic:"sol", si:"Sol", no:TX.sombra },
     { k:"agua", ic:"gota", si:"Riego", no:"Sin riego" },
-    { k:"aire", ic:"aire", si:"Aire", no:"Tapado con lona" }
+    { k:"aire", ic:"aire", si:"Aire", no:TX.tapado }
   ].concat(cfg.lampara ? [{ k:"lampara", ic:"lampara", si:"Lámpara prendida", no:"Lámpara apagada" }] : []);
   function dibujar(){
     const res = resultadoPasto(st), luzSol = st.luz;
     let h = `<rect x="0" y="0" width="640" height="300" rx="20" fill="${luzSol ? "#EAF4FB" : "#D9DFE6"}"/>`;
     if (luzSol) h += `<circle cx="560" cy="60" r="30" fill="#F2B544"/><path d="M560 18v-10M560 102v10M518 60h-10M602 60h10M531 31l-7-7M589 89l7 7M589 31l7-7M531 89l-7 7" stroke="#F2B544" stroke-width="5" stroke-linecap="round"/><path d="M540 90 L470 232 L180 232 Z" fill="#FFE9A8" opacity=".35"/>`;
-    else h += `<path d="M0 30 L360 30 L470 70 L470 96 L0 96 Z" fill="#7C8696"/><path d="M0 46h350M0 62h380M0 78h420" stroke="#5E6878" stroke-width="4"/><text x="40" y="22" font-family="Fredoka, sans-serif" font-size="17" fill="#5E6878">tribuna</text><rect x="140" y="96" width="350" height="140" fill="#1F2733" opacity=".14"/>`;
+    else h += `<path d="M0 30 L360 30 L470 70 L470 96 L0 96 Z" fill="#7C8696"/><path d="M0 46h350M0 62h380M0 78h420" stroke="#5E6878" stroke-width="4"/><text x="40" y="22" font-family="Fredoka, sans-serif" font-size="17" fill="#5E6878">${TX.sombraCorta}</text><rect x="140" y="96" width="350" height="140" fill="#1F2733" opacity=".14"/>`;
     if (st.lampara) h += `<path d="M330 0 V44" stroke="#5E6878" stroke-width="3"/><path d="M304 44 h52 l-8 18 h-36z" fill="#1F2733"/><circle cx="330" cy="66" r="9" fill="#FFE27A"/><path d="M318 70 L180 232 L480 232 L342 70 Z" fill="#FFE27A" opacity=".33"/>`;
     h += `<rect x="20" y="230" width="600" height="56" rx="10" fill="${st.agua ? "#8C6239" : "#B9956A"}"/>`;
     if (!st.agua && st.dias) h += `<path d="M200 248 l14 10 l-8 12 M300 252 l12 8 l12 -6 M410 246 l-10 14 l12 10" stroke="#7A5A2E" stroke-width="3" fill="none"/>`;
     if (st.agua) h += `<rect x="96" y="214" width="12" height="18" fill="#5E6878"/><path d="M102 212 q40 -60 90 -10 M102 212 q20 -70 60 -40" stroke="#5BA8F0" stroke-width="3" stroke-dasharray="3 8" fill="none" stroke-linecap="round"/>`;
     h += pastoSVG(res, 170, 470, 234, 120, t);
-    if (!st.aire) h += `<path d="M150 234 Q320 60 490 234" fill="#DCE7F2" opacity=".6" stroke="#8AA1B8" stroke-width="3"/><text x="320" y="126" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="17" fill="#5E6878">lona</text>`;
+    if (!st.aire) h += `<path d="M150 234 Q320 60 490 234" fill="#DCE7F2" opacity=".6" stroke="#8AA1B8" stroke-width="3"/><text x="320" y="126" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="17" fill="#5E6878">${TX.tapadoCorto}</text>`;
     h += `<rect x="24" y="252" width="${st.dias ? 92 : 80}" height="28" rx="14" fill="#fff" opacity=".9"/><text x="${st.dias ? 70 : 64}" y="272" text-anchor="middle" font-family="Fredoka, sans-serif" font-size="17" fill="#1F2733">Día ${Math.round(5 * t)}</text>`;
     svg.innerHTML = h;
     root.querySelectorAll("[data-t]").forEach(b => {
@@ -761,7 +967,7 @@ function wSim(cfg, ctx){
     });
     const r = root.querySelector("[data-run]"); r.disabled = quieto || enCurso;
     const inf = root.querySelector(".winfo");
-    inf.textContent = st.corrido ? `Después de 5 días: el pasto quedó ${PASTO[res].nombre}.` : "Elegí cómo está el pasto y adelantá los días.";
+    inf.textContent = st.corrido ? `Después de 5 días: ${TX.cosa} quedó ${PASTO[res].nombre}.` : `Elegí cómo está ${TX.cosa} y adelantá los días.`;
   }
   function correr(alFin){
     if (enCurso) return; enCurso = true; t = 0; st.dias = 0; st.corrido = false; dibujar();
@@ -777,7 +983,7 @@ function wSim(cfg, ctx){
   return {
     mount(el){
       root = el;
-      el.insertAdjacentHTML("beforeend", `<svg class="wsvg" viewBox="0 0 640 300" role="img" aria-label="Simulador del pasto de la cancha" style="touch-action:auto"></svg>
+      el.insertAdjacentHTML("beforeend", `<svg class="wsvg" viewBox="0 0 640 300" role="img" aria-label="${TX.aria}" style="touch-action:auto"></svg>
         <div class="sim-ctrl">${TOGS.map(T => `<button class="tog" data-t="${T.k}">${ICONOS[T.ic]}<span></span>${T.k in fijos ? ICONOS.candado : ""}</button>`).join("")}</div>
         <div class="sim-ctrl"><button class="run" data-run>${ICONOS.adelantar}Adelantar 5 días</button></div><div class="winfo"></div>`);
       svg = el.querySelector("svg.wsvg");
@@ -813,8 +1019,9 @@ const vt = fn => (document.startViewTransition && !matchMedia("(prefers-reduced-
 function Equipo(el, op){
   op = op || {};
   const st = { fuera:new Set(), grupos:0 };
+  const ic = op.icono || jugadorSVG, nom = op.nombre || "Jugador", lugar = op.lugar || "Vestuario", verbo = op.verbo || "Faltaron";
   let quieto = !!op.quieto;
-  const j = n => `<button class="jugador" data-j="${n}" style="view-transition-name:j${n}" aria-label="Jugador ${n}${st.fuera.has(n) ? ", en el vestuario" : ""}">${jugadorSVG(n)}</button>`;
+  const j = n => `<button class="jugador" data-j="${n}" style="view-transition-name:j${n}" aria-label="${nom} ${n}${st.fuera.has(n) ? ", en " + lugar.toLowerCase() : ""}">${ic(n)}</button>`;
   const hueco = () => `<span class="hueco" aria-hidden="true"></span>`;
   function html(){
     let cancha;
@@ -826,7 +1033,7 @@ function Equipo(el, op){
       }).join("") + `</div>`;
     } else cancha = `<div class="cancha">${Array.from({ length:12 }, (_, k) => st.fuera.has(k + 1) ? hueco() : j(k + 1)).join("")}</div>`;
     const banco = [...st.fuera].sort((a, b) => a - b).map(j).join("");
-    return `<div class="equipo">${cancha}<div class="vestuario"><h3>Vestuario</h3><div class="banco">${banco}</div><div class="contador">Faltaron <b>${st.fuera.size}</b> de 12</div></div></div>`;
+    return `<div class="equipo">${cancha}<div class="vestuario"><h3>${lugar}</h3><div class="banco">${banco}</div><div class="contador">${verbo} <b>${st.fuera.size}</b> de 12</div></div></div>`;
   }
   const render = () => { el.innerHTML = html(); };
   el.addEventListener("click", ev => {
@@ -844,14 +1051,16 @@ function Equipo(el, op){
   };
 }
 // Dos días del mismo equipo para comparar (Mostrame de Matemática).
-function DosDias(el, alCambiar){
-  const dias = [ { id:"martes", t:"Martes", f:"faltó 1/4", fuera:new Set() }, { id:"jueves", t:"Jueves", f:"faltó 1/3", fuera:new Set() } ];
+function DosDias(el, alCambiar, cfg){
+  cfg = cfg || {};
+  const dias = (cfg.dias || [ { id:"martes", t:"Martes", f:"faltó 1/4" }, { id:"jueves", t:"Jueves", f:"faltó 1/3" } ]).map(d => Object.assign({ fuera:new Set() }, d));
+  const ic = cfg.icono || jugadorSVG, verbo = cfg.verbo || "faltaron", boton = cfg.boton || "Faltaron más";
   let elegido = null, quieto = false;
   function render(){
     el.innerHTML = `<div class="dias2">${dias.map(d => `<div class="diafila${elegido === d.id ? " sel" : ""}">
-      <h3>${d.t}<small>${d.f}</small><small>faltaron ${d.fuera.size}</small></h3>
-      <div class="fila12">${Array.from({ length:12 }, (_, k) => `<button class="jugador" data-d="${d.id}" data-j="${k + 1}" aria-label="${d.t}, jugador ${k + 1}${d.fuera.has(k + 1) ? ", faltó" : ""}" style="${d.fuera.has(k + 1) ? "opacity:.22" : ""}">${jugadorSVG(k + 1)}</button>`).join("")}</div>
-      <button class="elegir" data-e="${d.id}">Faltaron más</button></div>`).join("")}</div>`;
+      <h3>${d.t}<small>${d.f}</small><small>${verbo} ${d.fuera.size}</small></h3>
+      <div class="fila12">${Array.from({ length:12 }, (_, k) => `<button class="jugador" data-d="${d.id}" data-j="${k + 1}" aria-label="${d.t}, ${k + 1}${d.fuera.has(k + 1) ? ", marcado" : ""}" style="${d.fuera.has(k + 1) ? "opacity:.22" : ""}">${ic(k + 1)}</button>`).join("")}</div>
+      <button class="elegir" data-e="${d.id}">${boton}</button></div>`).join("")}</div>`;
   }
   el.addEventListener("click", ev => {
     if (quieto) return;
@@ -861,7 +1070,7 @@ function DosDias(el, alCambiar){
   });
   render();
   return {
-    get: () => ({ martes: dias[0].fuera.size, jueves: dias[1].fuera.size, elegido }),
+    get: () => Object.assign({ elegido }, ...dias.map(d => ({ [d.id]: d.fuera.size }))),
     set(m, j, e){ dias[0].fuera = new Set(m); dias[1].fuera = new Set(j); elegido = e || null; render(); },
     bloquear(){ quieto = true; }
   };
@@ -901,95 +1110,135 @@ function Lienzo(el){
   el.addEventListener("click", e => { const c = e.target.closest("[data-c]"); if (c){ col = c.dataset.c; el.querySelectorAll("[data-c]").forEach(x => x.classList.toggle("on", x === c)); } if (e.target.closest("[data-borrar]")) g.clearRect(0, 0, cv.width, cv.height); });
   return { trazos: () => trazos };
 }
-/* Cierre de cada clase: en vez de mostrarle resultados, Guio le hace una pregunta metacognitiva.
-   La respuesta se registra y se usa en "Lo que cambió hoy". */
-const CIERRES = {
-  mate: { pregunta:"¿Qué tan difícil te pareció esta clase?", opciones:["Muy fácil", "Fácil", "Más o menos", "Difícil", "Muy difícil"],
-    responde: v => v <= 2 ? ["Qué bueno que te resultó fácil.", "festeja"] : v === 3 ? ["Gracias por contarme.", "reposo"] : ["Gracias por contarme. Lo tengo en cuenta para mañana.", "anima"],
-    despues:"Ahora te dejo con Otto, tu profe de Lengua." },
-  lengua: { pregunta:"¿Cuánto te gustó esta clase?", opciones:["Nada", "Poco", "Más o menos", "Bastante", "Mucho"],
-    responde: v => v >= 4 ? ["¡Qué bueno que te gustó!", "festeja"] : v === 3 ? ["Gracias por contarme.", "reposo"] : ["Gracias por decírmelo. Voy a buscar otra manera.", "anima"],
-    despues:"Ahora, recreo." },
-  ciencias: { pregunta:"¿Podrías explicarle a un amigo por qué se secaba el pasto?", opciones:["Nada seguro", "Poco seguro", "Más o menos", "Bastante seguro", "Muy seguro"],
-    responde: v => v >= 4 ? ["Genial. Capaz hoy se lo contás a alguien.", "festeja"] : v === 3 ? ["Está bien. Lo vamos a repasar un poco.", "reposo"] : ["Gracias por contarme. Lo repasamos juntos.", "anima"],
-    despues:"" }
-};
-function cierre(id){
-  const c = CIERRES[id], materia = DIA.find(d => d.id === id).nombre;
-  return { id:id + "-cierre", nombre:`Cierre de ${materia}: pregunta`, tono:id, nodo:id, quien:"miseno",
-    entrar(){
-      completarNodo(id);
-      tarjeta().innerHTML = `<p class="pregunta">${esc(c.pregunta)}</p>
-        <div class="escala" role="group" aria-label="${esc(c.pregunta)}">${c.opciones.map((o, k) => `<button class="paso" data-v="${k + 1}" style="--h:${18 + k * 13}px"><span class="barra" aria-hidden="true"></span>${esc(o)}</button>`).join("")}</div>`;
-      decir(c.pregunta);
-      tarjeta().onclick = async ev => {
-        const b = ev.target.closest("[data-v]"); if (!b || S.meta[id]) return;
-        const v = Number(b.dataset.v); S.meta[id] = { valor:v, texto:c.opciones[v - 1] };
-        tarjeta().querySelectorAll("[data-v]").forEach(x => { x.disabled = true; x.classList.add(x === b ? "elegida" : "apagada"); });
-        registrar(`respondió: ${c.pregunta}`, c.opciones[v - 1]);
-        const [r, estado] = c.responde(v);
-        await decir((r + " " + c.despues).trim(), { estado });
-        principal("Seguir", siguiente);
-      };
-    } };
+
+/* ===================== LECCIONES POR PERFIL =====================
+   Cada lección: nodo del día, tono, profe(s), pregunta de cierre y sus 4 momentos.
+   mateJ y lenguaJ son las de v1.1 (Joaquín); el resto son nuevas. */
+const caja = () => { const c = document.createElement("div"); c.className = "caja"; tarjeta().appendChild(c); return c; };
+const quitarDev = () => { const d = tarjeta().querySelector(".devolucion"); if (d) sacar(d); };
+const cuartos = q => { const e = Math.floor(q / 4), r = q % 4, f = ["", "1/4", "1/2", "3/4"][r]; return e && r ? `${e} ${f}` : e ? `${e}` : r ? f : "0"; };
+function Contador(el, cfg, alCambiar){
+  let v = cfg.valor || 0, quieto = false;
+  const r = () => { el.innerHTML = `<div class="contador-w">${cfg.etiqueta ? `<span class="cw-lbl">${cfg.etiqueta}</span>` : ""}<button data-m aria-label="Menos">−</button><b>${(cfg.fmt || String)(v)}</b><button data-p aria-label="Más">+</button></div>`; };
+  el.addEventListener("click", e => {
+    if (quieto) return;
+    if (e.target.closest("[data-m]")) v = Math.max(cfg.min || 0, v - (cfg.paso || 1));
+    else if (e.target.closest("[data-p]")) v = Math.min(cfg.max || 99, v + (cfg.paso || 1));
+    else return;
+    marcarToque(); r(); if (alCambiar) alCambiar(v);
+  });
+  r(); return { get: () => v, set(n){ v = n; r(); }, bloquear(){ quieto = true; } };
 }
-function completarNodo(id){ if (!S.hechos.includes(id)) S.hechos.push(id); pintarDia(); }
-function costoMate(){ const m = S.met.mate; return (!!m && (m.errores + m.ayudas) > 0) || dijoDificil(); }
-const dijoDificil = () => !!S.meta.mate && S.meta.mate.valor >= 4;
+// Revisa un orden contra reglas [antes, después]; devuelve la primera regla rota.
+const rota = (orden, reglas) => reglas.find(([a, b]) => orden.indexOf(a) > orden.indexOf(b));
+function ordenDe(w, n){ const { asig } = w.get(); return Array.from({ length:n }, (_, k) => asig["p" + (k + 1)] || null); }
 
-/* ===================== LOS 22 MOMENTOS =====================
-   Cada uno: id, nombre, tono, nodo (clase del día), fase, quien habla, ayuda (muestra "No entiendo"),
-   pista y demostración, y entrar(): qué se ve, qué dice y cómo avanza. Guion: doc de definición. */
-const MOMENTOS = [
-  { id:"saludo", nombre:"Saludo", tono:"miseno", quien:"miseno",
-    async entrar(){
-      tarjeta().innerHTML = `<p class="grande">Hola, ${ALUMNO}</p>`;
-      registrar("llegada", new Date().toTimeString().slice(0, 5));
-      await espera(600);
-      await decir(`Hola, ${ALUMNO}. Soy Guio, tu tutor. Espero que hayas amanecido bien.`);
-      await espera(300); siguiente();
-    } },
+/* ---------- Dibujo: figuras y capas ---------- */
+const FIGURAS = {
+  pez: { vb:"0 0 320 200", piezas:{
+      cola:{ t:"Cola", svg:'<path d="M95 100 L22 52 L36 100 L22 148 Z" fill="#FFC93C"/>' },
+      cuerpo:{ t:"Cuerpo", svg:'<ellipse cx="170" cy="100" rx="92" ry="58" fill="#8A4FFF"/>' },
+      aleta:{ t:"Aleta", svg:'<path d="M150 104 L196 74 L200 130 Z" fill="#FF8FB1"/>' },
+      ojo:{ t:"Ojo", svg:'<circle cx="222" cy="84" r="12" fill="#fff"/><circle cx="225" cy="84" r="6.5" fill="#1C1428"/>' } },
+    reglas:[["cola", "cuerpo"], ["cuerpo", "aleta"], ["cuerpo", "ojo"]] },
+  gato: { vb:"0 0 320 220", piezas:{
+      cola:{ t:"Cola", svg:'<path d="M110 172 Q34 160 52 82" stroke="#F2994A" stroke-width="18" fill="none" stroke-linecap="round"/>', dice:"La cola es una línea curva, bien gruesa." },
+      cuerpo:{ t:"Cuerpo", svg:'<ellipse cx="150" cy="162" rx="72" ry="46" fill="#F2994A"/>', dice:"El cuerpo es un óvalo." },
+      orejas:{ t:"Orejas", svg:'<path d="M180 76 L190 22 L216 62 Z M226 62 L250 22 L262 78 Z" fill="#C8662A"/>', dice:"Las orejas son dos triángulos." },
+      cabeza:{ t:"Cabeza", svg:'<circle cx="222" cy="98" r="46" fill="#F7B267"/>', dice:"La cabeza es un círculo." },
+      ojos:{ t:"Ojos", svg:'<circle cx="207" cy="94" r="6.5" fill="#1C1428"/><circle cx="239" cy="94" r="6.5" fill="#1C1428"/><path d="M216 112 q7 7 14 0" stroke="#1C1428" stroke-width="3.5" fill="none" stroke-linecap="round"/>', dice:"Los ojos son dos puntos, y la boca, una curvita." } },
+    reglas:[["cola", "cuerpo"], ["cuerpo", "cabeza"], ["orejas", "cabeza"], ["cabeza", "ojos"]] }
+};
+const figuraSVG = (f, orden, extra) => `<svg class="figura" viewBox="${FIGURAS[f].vb}" role="img" aria-label="Dibujo">${orden.filter(Boolean).map(id => `<g data-p="${id}">${FIGURAS[f].piezas[id].svg}</g>`).join("")}${extra || ""}</svg>`;
+function Capas(el, f, alCambiar){
+  const F = FIGURAS[f], ids = Object.keys(F.piezas), n = ids.length;
+  const cont = document.createElement("div"); cont.className = "capas"; el.appendChild(cont);
+  const vista = document.createElement("div"); vista.className = "vista"; cont.appendChild(vista);
+  const w = wColocar({ layout:"orden", titulo:"Capas", cartas: ids.map(id => ({ id, t:F.piezas[id].t })),
+    slots: Array.from({ length:n }, (_, k) => ({ id:"p" + (k + 1), label: k === 0 ? "1 · atrás" : k === n - 1 ? `${n} · adelante` : String(k + 1), vacio:"Soltá una parte" })) },
+    { cambio: () => { pintar(); alCambiar(); } });
+  const pintar = () => { const o = ordenDe(w, n); vista.innerHTML = o.some(Boolean) ? figuraSVG(f, o) : `<p class="vacio">Acá aparece tu dibujo</p>`; };
+  w.mount(cont); pintar();
+  return { orden: () => ordenDe(w, n), completo: () => ordenDe(w, n).every(Boolean), regla: () => rota(ordenDe(w, n), F.reglas), bloquear: () => w.bloquear(), set: o => { const a = {}; o.forEach((id, k) => a["p" + (k + 1)] = id); w.set({ asig:a }); pintar(); } };
+}
 
-  { id:"animo", nombre:"¿Cómo estás?", tono:"miseno", quien:"miseno",
-    entrar(){
-      tarjeta().innerHTML = `<div class="opciones" role="group" aria-label="Cómo te sentís">${ANIMOS.map(a => `<button class="opcion" data-a="${a.id}"><svg viewBox="0 0 64 64" aria-hidden="true">${CARAS[a.id]}</svg>${a.t}</button>`).join("")}</div>`;
-      decir("¿Cómo te sentís hoy?");
-      tarjeta().onclick = async ev => {
-        const b = ev.target.closest("[data-a]"); if (!b || S.animo) return;
-        S.animo = b.dataset.a; b.classList.add("elegida"); registrar("dijo que se siente", S.animo);
-        tarjeta().onclick = null;
-        await decir("Gracias por contarme."); siguiente();
-      };
-    } },
+/* ---------- Matemática de Sofía: el refugio ---------- */
+function perritoSVG(n){
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="16" cy="26" rx="8" ry="14" fill="#8E5B3A" transform="rotate(22 16 26)"/><ellipse cx="48" cy="26" rx="8" ry="14" fill="#8E5B3A" transform="rotate(-22 48 26)"/><circle cx="32" cy="35" r="20" style="fill:var(--nodo)"/><circle cx="25" cy="31" r="2.8" fill="#2A1A10"/><circle cx="39" cy="31" r="2.8" fill="#2A1A10"/><ellipse cx="32" cy="38.5" rx="4" ry="3" fill="#2A1A10"/><text x="32" y="53" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500" fill="#fff">${n}</text></svg>`;
+}
+const REFUGIO = { icono:perritoSVG, nombre:"Perrito", lugar:"Adoptados", verbo:"Adoptaron" };
 
-  { id:"sensores", nombre:"Lo que detectan los sensores", tono:"miseno", quien:"miseno",
-    async entrar(){
-      const nerv = CFG.sensor === "nervioso";
-      const dijo = (ANIMOS.find(a => a.id === S.animo) || ANIMOS[0]).t;
-      tarjeta().innerHTML = `<div class="lectura">
-        <div class="dato dijo"><small>Vos dijiste</small><b>${dijo}</b></div>
-        <div class="dato"><small>Tus sensores</small><b id="sAnimo">Midiendo…</b><div class="barra-sensor"><i></i></div></div>
-        <div class="dato dijo" style="visibility:hidden"></div>
-        <div class="dato"><small>Sueño</small><b id="sSueno">Midiendo…</b><div class="barra-sensor"><i></i></div></div></div>`;
-      await espera(1700);
-      $("#sAnimo").textContent = nerv ? "Un poco nervioso" : "Contento";
-      $("#sSueno").textContent = nerv ? "5 h 40 min, poco" : "9 h 10 min, bien";
-      registrar("sensores", nerv ? "nervioso, durmió poco" : "contento, durmió bien");
-      if ((nerv && /contento|tranquilo/.test(S.animo)) || (!nerv && /nervioso|cansado/.test(S.animo))) registrar("lo que dijo no coincide con los sensores");
-      await decir(nerv ? "Mis sensores detectan que estás un poco nervioso y que dormiste poco. Vamos a ir de a poco." : "Mis sensores detectan que estás contento y que dormiste bien. Tenés mucha energía para aprender.");
-      await espera(400); siguiente();
-    } },
+/* ---------- Gastronomía ---------- */
+const INGREDIENTES = [
+  { id:"harina", t:"Harina", dice:"La harina le da cuerpo a la mezcla.", svg:'<path d="M18 20h28l4 36H14z" fill="#F3E3C3"/><path d="M18 20l4-8h20l4 8" fill="#E2CFA6"/><circle cx="32" cy="38" r="7" fill="#D9B97E"/>' },
+  { id:"huevo", t:"Huevo", dice:"El huevo une todo, para que la mezcla no se desarme.", svg:'<ellipse cx="32" cy="35" rx="16" ry="21" fill="#FFF4DD" stroke="#E9D7B0" stroke-width="2"/>' },
+  { id:"leche", t:"Leche", dice:"La leche hace que la mezcla quede líquida.", svg:'<path d="M22 22h20v34H22z" fill="#EAF4FB"/><path d="M22 22l4-10h12l4 10z" fill="#5BA8F0"/><rect x="22" y="32" width="20" height="10" fill="#5BA8F0"/>' },
+  { id:"manteca", t:"Manteca", dice:"La manteca hace que no se pegue en la sartén.", svg:'<path d="M12 34l10-12h30l-10 12z" fill="#FFE27A"/><path d="M12 34h30v14H12zM42 34l10-12v14l-10 12z" fill="#F6CF45"/>' }
+];
+const PASOS = [ { id:"mezclar", t:"Mezclar la harina con los huevos" }, { id:"leche", t:"Agregar la leche de a poco" }, { id:"reposar", t:"Dejar descansar la mezcla" }, { id:"calentar", t:"Calentar la sartén con manteca" }, { id:"vuelta", t:"Dar vuelta cuando hace burbujas" } ];
+const REGLAS_PANQUEQUE = [["mezclar", "leche"], ["leche", "reposar"], ["reposar", "vuelta"], ["calentar", "vuelta"]];
+const POR_QUE_PASO = { "mezclar,leche":"La leche va después de mezclar la harina con los huevos.", "leche,reposar":"La mezcla descansa cuando ya está completa, con la leche.", "reposar,vuelta":"No se puede cocinar la mezcla antes de que descanse.", "calentar,vuelta":"Para dar vuelta el panqueque, la sartén ya tiene que estar caliente." };
+const BUDIN = [ "Prender el horno", "Enmantecar el molde", "Batir la manteca con el azúcar", "Meter el molde en el horno", "Agregar los huevos y la harina", "Volcar la mezcla en el molde" ];
 
-  { id:"tu-dia", nombre:"Tu día", tono:"miseno", quien:"miseno",
-    async entrar(){
-      tarjeta().innerHTML = `<ul class="plan">${DIA.map((d, k) => `<li style="--c:${d.c};animation-delay:${0.3 + k * 0.45}s"><i></i><span>${d.nombre}</span><time>${d.hora}</time></li>`).join("")}</ul>`;
-      const items = [...$("#dia").children]; items.forEach(li => li.classList.remove("visible"));
-      items.forEach((li, k) => setTimeout(() => li.classList.add("visible"), 300 + k * 450));
-      await decir("Así armé tu día. Primero Matemática, después Lengua, después el recreo y al final Ciencias.");
-      principal("Arrancar", async () => { principal(null); await decir("Te dejo con Numi, tu profe de Matemática."); siguiente(); });
-    } },
+/* ---------- Huerta ---------- */
+const PLANTAS = {
+  tomate:{ t:"Tomate", svg:'<circle cx="32" cy="37" r="15" fill="#E8453C"/><path d="M23 24l9 7 9-7-4 9h-10z" fill="#2E9E5B"/>' },
+  lechuga:{ t:"Lechuga", svg:'<circle cx="32" cy="35" r="16" fill="#9ED872"/><circle cx="32" cy="35" r="9" fill="#6FBF4A"/><circle cx="32" cy="35" r="4" fill="#4E9E35"/>' },
+  albahaca:{ t:"Albahaca", svg:'<ellipse cx="25" cy="34" rx="8" ry="13" fill="#3E9B4F" transform="rotate(-25 25 34)"/><ellipse cx="39" cy="34" rx="8" ry="13" fill="#56B866" transform="rotate(25 39 34)"/><path d="M32 30v20" stroke="#2E7A3C" stroke-width="3"/>' }
+};
+const CICLO = [null, "tomate", "lechuga", "albahaca"];
+function Huerta(el, alCambiar){
+  let st = Array(12).fill(null), quieto = false;
+  const cuenta = () => ({ tomate: st.filter(x => x === "tomate").length, lechuga: st.filter(x => x === "lechuga").length, albahaca: st.filter(x => x === "albahaca").length, vacios: st.filter(x => !x).length });
+  function r(){
+    const c = cuenta();
+    el.innerHTML = `<div class="huerta">${st.map((p, k) => `<button class="cantero${p ? " " + p : ""}" data-k="${k}" aria-label="Lugar ${k + 1}: ${p ? PLANTAS[p].t : "vacío"}"><svg viewBox="0 0 64 64" aria-hidden="true">${p ? PLANTAS[p].svg : '<circle cx="32" cy="36" r="14" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 5" opacity=".45"/>'}</svg></button>`).join("")}</div>
+      <div class="leyenda">${Object.keys(PLANTAS).map(k => `<span><svg viewBox="0 0 64 64" aria-hidden="true">${PLANTAS[k].svg}</svg>${PLANTAS[k].t} <b>${c[k]}</b></span>`).join("")}<span class="vac">Vacíos <b>${c.vacios}</b></span></div>`;
+  }
+  el.addEventListener("click", e => {
+    const b = e.target.closest("[data-k]"); if (!b || quieto) return;
+    const k = Number(b.dataset.k); st[k] = CICLO[(CICLO.indexOf(st[k]) + 1) % CICLO.length];
+    marcarToque(); r(); if (alCambiar) alCambiar(cuenta());
+  });
+  r();
+  return { cuenta, set(a){ st = a.slice(); r(); }, bloquear(v){ quieto = v !== false; } };
+}
+const llenar = (t, l, a) => [...Array(t).fill("tomate"), ...Array(l).fill("lechuga"), ...Array(a).fill("albahaca"), ...Array(12 - t - l - a).fill(null)];
+const tomateraSVG = '<svg viewBox="0 0 64 80" aria-hidden="true"><path d="M32 78V22" stroke="#2E7A3C" stroke-width="4"/><ellipse cx="22" cy="40" rx="9" ry="5" fill="#3E9B4F" transform="rotate(-30 22 40)"/><ellipse cx="42" cy="34" rx="9" ry="5" fill="#3E9B4F" transform="rotate(30 42 34)"/><circle cx="20" cy="56" r="7" fill="#E8453C"/><circle cx="44" cy="52" r="7" fill="#E8453C"/><circle cx="32" cy="14" r="7" fill="#E8453C"/><circle cx="24" cy="26" r="6" fill="#E8453C"/><circle cx="44" cy="68" r="6" fill="#E8453C"/></svg>';
 
-  { id:"mate-explorar", nombre:"Matemática · Explorar", tono:"mate", nodo:"mate", fase:"Explorar", quien:"mate",
+const PLANTA = {
+  raiz:{ t:"Raíz", dice:"La raíz toma el agua de la tierra.", svg:'<path d="M150 232 q-4 24 -30 40 M150 232 q2 30 0 52 M150 232 q8 22 34 36 M128 262 q-14 4 -22 16 M170 258 q12 6 18 18" stroke="#8C6239" stroke-width="5" fill="none" stroke-linecap="round"/>' },
+  tallo:{ t:"Tallo", dice:"El tallo lleva el agua hacia arriba.", svg:'<path d="M150 232 C146 180 156 130 150 74" stroke="#3E9B4F" stroke-width="9" fill="none" stroke-linecap="round"/>' },
+  hoja:{ t:"Hojas", dice:"Las hojas fabrican el alimento de la planta con la luz del sol.", svg:'<path d="M150 170 q-40 -30 -78 -10 q40 30 78 10z" fill="#56B866"/><path d="M152 132 q40 -30 78 -12 q-38 32 -78 12z" fill="#3E9B4F"/>' },
+  flor:{ t:"Flor", dice:"La flor, cuando la visitan las abejas, se convierte en fruto.", svg:'<g fill="#FFD43B"><circle cx="150" cy="50" r="13"/><circle cx="174" cy="62" r="13"/><circle cx="126" cy="62" r="13"/><circle cx="138" cy="84" r="13"/><circle cx="162" cy="84" r="13"/></g><circle cx="150" cy="68" r="11" fill="#F08C00"/>' },
+  fruto:{ t:"Fruto", dice:"El fruto guarda las semillas adentro: ¡es el tomate!", svg:'<path d="M152 132 q30 6 44 34" stroke="#3E9B4F" stroke-width="5" fill="none"/><circle cx="198" cy="184" r="22" fill="#E8453C"/><path d="M188 164l10 7 10-7-4 9h-12z" fill="#2E9E5B"/>' }
+};
+const ORDEN_PLANTA = ["raiz", "tallo", "hoja", "fruto", "flor"];
+const plantaSVG = (partes, extra) => `<svg class="planta" viewBox="0 0 300 300" role="img" aria-label="Planta de tomate"><rect x="20" y="226" width="260" height="70" rx="14" fill="#C9A27A" opacity=".55"/>${partes.map(id => `<g data-p="${id}" class="parte">${PLANTA[id].svg}</g>`).join("")}${extra || ""}</svg>`;
+
+const panquequeSVG = '<svg viewBox="0 0 40 16" aria-hidden="true"><ellipse cx="20" cy="9" rx="18" ry="6" fill="#E9B562"/><ellipse cx="20" cy="7" rx="15" ry="4" fill="#F4CC85"/></svg>';
+const taza = q => Array.from({ length: Math.ceil(q / 4) }, (_, k) => { const f = Math.min(4, q - k * 4); return `<svg viewBox="0 0 32 32" class="taza" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/>${f === 4 ? '<circle cx="16" cy="16" r="13" fill="currentColor"/>' : `<path d="M16 16V3A13 13 0 ${f > 2 ? 1 : 0} 1 ${16 + 13 * Math.sin(f * Math.PI / 2)} ${16 - 13 * Math.cos(f * Math.PI / 2)}Z" fill="currentColor"/>`}</svg>`; }).join("");
+const RECETA = [ { id:"huevos", t:"Huevos", base:2, paso:1, fmt: v => `${v}` , unidad:"" }, { id:"leche", t:"Leche", base:4, paso:1, fmt: v => `${cuartos(v)} ${v > 4 ? "tazas" : "taza"}`, cuartos:true }, { id:"harina", t:"Harina", base:3, paso:1, fmt: v => `${cuartos(v)} ${v > 4 ? "tazas" : "taza"}`, cuartos:true } ];
+function Escalar(el, para, alCambiar){
+  el.innerHTML = `<div class="receta"><div class="rfila rcab"><span></span><span>Para 4</span><span>Para ${para}</span></div>${RECETA.map(r => `<div class="rfila"><span class="rnomb">${r.t}</span><span class="rbase">${r.fmt(r.base)}${r.cuartos ? `<i>${taza(r.base)}</i>` : ""}</span><span class="rnuevo" data-r="${r.id}"></span></div>`).join("")}</div>`;
+  const c = {};
+  RECETA.forEach(r => { c[r.id] = Contador(el.querySelector(`[data-r="${r.id}"]`), { valor:r.base, paso:r.paso, max:20, fmt:r.fmt }, alCambiar); });
+  return { get: () => Object.fromEntries(RECETA.map(r => [r.id, c[r.id].get()])), bloquear: () => RECETA.forEach(r => c[r.id].bloquear()) };
+}
+
+/* ---------- Experimentos de Ciencias (Bruno) ---------- */
+const TXT_TOMATE = { cosa:"el plantín", sombra:"Sombra del galpón", sombraCorta:"galpón", tapado:"Tapado con un balde", tapadoCorto:"balde", aria:"Simulador de los plantines de tomate" };
+const RES_TOMATE = { verde:"Con sol, riego y aire, el plantín crece fuerte.", amarillo:"Sin sol, se puso amarillo y flaquito.", seco:"Sin riego, se secó.", marchito:"Sin aire, se marchitó." };
+const EXPERIMENTOS = [
+  { id:"a", m1:["sol", "riego"], m2:["sombra", "sin riego"] },
+  { id:"b", m1:["sol", "riego"], m2:["sol", "sin riego"] },
+  { id:"c", m1:["sol", "riego"], m2:["sol", "riego", "maceta grande"] }
+];
+const maceta = (n, cosas) => `<div class="maceta"><small>Maceta ${n}</small>${cosas.map(c => `<span class="${/sin|sombra/.test(c) ? "no" : ""}">${c.startsWith("sol") ? ICONOS.sol : c.includes("riego") ? ICONOS.gota : c === "sombra" ? ICONOS.sol : ""}${c}</span>`).join("")}</div>`;
+
+/* ===================== LAS LECCIONES ===================== */
+const LECCIONES = {};
+LECCIONES.mateJ = { nodo:"mate", cierre:{ tipo:"dificil" }, momentos: () => [   { id:"mate-explorar", nombre:"Matemática · Explorar", tono:"mate", nodo:"mate", fase:"Explorar", quien:"mate",
     entrar(){
       const eq = Equipo(tarjeta(), { alCambiar: async st => {
         if (S.toques === 3){ principal("Seguir", siguiente); registrar("exploró el equipo", st.fuera.size + " en el vestuario"); await decir("Muy bien. Cuando quieras, tocá Seguir."); }
@@ -1039,11 +1288,8 @@ const MOMENTOS = [
       this._w = DosDias(tarjeta(), () => { const d = tarjeta().querySelector(".devolucion"); if (d) sacar(d); });
       decir("El martes faltó un cuarto del equipo y el jueves faltó un tercio. Armá los dos días y tocá el día en que faltaron más.");
       principal("Listo", () => this.comprobar());
-    } },
-
-  cierre("mate"),
-
-  { id:"lengua-explorar", nombre:"Lengua · Explorar", tono:"lengua", nodo:"lengua", fase:"Explorar", quien:"lengua",
+    } } ] };
+LECCIONES.lenguaJ = { nodo:"lengua", cierre:{ tipo:"gusto" }, momentos: () => [   { id:"lengua-explorar", nombre:"Lengua · Explorar", tono:"lengua", nodo:"lengua", fase:"Explorar", quien:"lengua",
     async entrar(){
       let leyendo = true;
       const c = Cuento(tarjeta(), async (id, f) => { if (leyendo) return; marcarToque(); registrar("repitió una frase", id); c.marca(id, "suena"); await decir(fraseDe(id)); c.marca("", "suena"); });
@@ -1110,124 +1356,566 @@ const MOMENTOS = [
       this._w.mount(caja);
       principal("Listo", () => this.comprobar());
       if (!reintento) decir("Ahora armá vos una frase. ¿Por qué levantaron a Lucía en andas? Arrastrá cada tarjeta a su lugar y tocá Listo.");
+    } } ] };
+
+LECCIONES.dibujoS = { nodo:"dibujo", cierre:{ tipo:"dificil" }, momentos: () => [
+  { id:"dibujo-explorar", nombre:"Dibujo · Explorar", tono:"dibujo", nodo:"dibujo", fase:"Explorar", quien:"dibujo",
+    entrar(){
+      const vistas = new Set();
+      tarjeta().innerHTML = `<div class="vista tocable">${figuraSVG("gato", ["cola", "cuerpo", "orejas", "cabeza", "ojos"])}</div>`;
+      tarjeta().onclick = async ev => {
+        const g = ev.target.closest("[data-p]"); if (!g) return;
+        tarjeta().querySelectorAll("[data-p]").forEach(x => x.classList.toggle("brilla", x === g));
+        marcarToque(); vistas.add(g.dataset.p); registrar("tocó una parte del gato", g.dataset.p);
+        await decir(FIGURAS.gato.piezas[g.dataset.p].dice);
+        if (vistas.size === 3) principal("Seguir", siguiente);
+      };
+      decir(`Hola, ${ALUMNO}. Soy Dona. Este gato está hecho solo con figuras. Tocá sus partes para descubrir cuáles son.`);
     } },
-
-  cierre("lengua"),
-
-  { id:"recreo", nombre:"Recreo", tono:"recreo", nodo:"recreo", quien:"miseno",
+  { id:"dibujo-explicar", nombre:"Dibujo · Explicar", tono:"dibujo", nodo:"dibujo", fase:"Explicar", quien:"dibujo",
     async entrar(){
-      const motivo = costoMate() ? "Sofía resolvió rápido lo de los tercios y te puede ayudar." : "Anoté que con ellos tu ánimo sube.";
-      tarjeta().innerHTML = `<div class="amigos"><div class="amigo"><i>S</i>Sofía</div><div class="amigo"><i>B</i>Bruno</div></div><p class="motivo">${esc(motivo)}</p>`;
-      registrar("sugirió el recreo con", "Sofía y Bruno");
-      await decir(`Te sugiero pasar el recreo con Sofía y Bruno. ${motivo} Nos vemos en veinte minutos.`, { sub: `Te sugiero pasar el recreo con Sofía y Bruno. ${motivo}` });
+      tarjeta().innerHTML = `<div class="dos-vistas"><div class="vista" id="vMal"></div><div class="vista" id="vBien"></div></div>`;
+      const p = decir("Mirá. Lo que dibujo después tapa a lo que dibujé antes. Si hago primero la cabeza y después las orejas, las orejas quedan encima. Si hago primero las orejas, la cabeza las tapa y asoman solo las puntas. Por eso el orden importa.");
+      const mal = ["cola", "cuerpo", "cabeza", "orejas", "ojos"], bien = ["cola", "cuerpo", "orejas", "cabeza", "ojos"];
+      for (let k = 1; k <= 5; k++){ await espera(k === 1 ? 900 : 650); $("#vMal").innerHTML = figuraSVG("gato", mal.slice(0, k)); }
+      for (let k = 1; k <= 5; k++){ await espera(k === 1 ? 1400 : 650); $("#vBien").innerHTML = figuraSVG("gato", bien.slice(0, k)); }
+      await p; principal("Seguir", siguiente);
+    } },
+  { id:"dibujo-descubrir", nombre:"Dibujo · Descubrir", tono:"dibujo", nodo:"dibujo", fase:"Descubrir", quien:"dibujo", ayuda:true,
+    pista:"Pensá qué tiene que quedar tapado. La cola queda detrás del cuerpo.",
+    async demo(){
+      this._c.bloquear(); principal(null);
+      const p = decir("Mirá cómo lo pienso: la cola asoma detrás del cuerpo, así que va primero. Después el cuerpo, y arriba de todo lo que está encima: la aleta y el ojo. Ahora probá vos.");
+      await espera(1200); this._c.set(["cola", "cuerpo", "aleta", "ojo"]);
+      await p; await espera(500); this.montar();
+    },
+    montar(){
+      tarjeta().innerHTML = ""; this._c = Capas(tarjeta(), "pez", quitarDev);
+      principal("Listo", async () => {
+        const mt = metricas(); mt.intentos++;
+        if (!this._c.completo()) return errar(this, "faltan partes");
+        const r = this._c.regla(); if (r) return errar(this, `${r[1]} antes que ${r[0]}`);
+        this._c.bloquear(); await acertar(this, "¡Así es! La cola detrás, el cuerpo en el medio y arriba la aleta y el ojo.");
+      });
+    },
+    entrar(){ this.montar(); decir("Armá este pez en orden. Arrastrá cada parte a su capa: la capa uno es la de más atrás."); } },
+  { id:"dibujo-mostrame", nombre:"Dibujo · Mostrame", tono:"dibujo", nodo:"dibujo", fase:"Mostrame", quien:"dibujo", ayuda:true,
+    pista:"Las orejas asoman detrás de la cabeza, y los ojos van arriba de todo.",
+    demoTexto:"Mirá el gato del principio: la cola y las orejas casi no se ven, porque están detrás. Lo que está atrás va primero. Ahora probá vos.",
+    entrar(){
+      this._c = Capas(tarjeta(), "gato", quitarDev);
+      decir("Ahora el gato, que tiene cinco partes. Ordenalas para que quede igual que el del principio.");
+      principal("Listo", async () => {
+        const mt = metricas(); mt.intentos++;
+        if (!this._c.completo()) return errar(this, "faltan partes");
+        const r = this._c.regla(); if (r) return errar(this, `${r[1]} antes que ${r[0]}`);
+        this._c.bloquear(); await acertar(this, "¡Precioso! Las orejas detrás de la cabeza y los ojos arriba de todo.");
+      });
+    } }
+] };
+
+LECCIONES.mateS = { nodo:"mate", cierre:{ tipo:"gusto" }, momentos: () => [
+  { id:"mate-explorar", nombre:"Matemática · Explorar", tono:"mate", nodo:"mate", fase:"Explorar", quien:"mate",
+    entrar(){
+      Equipo(tarjeta(), Object.assign({ alCambiar: async st => {
+        if (S.toques === 3){ principal("Seguir", siguiente); registrar("exploró el refugio", st.fuera.size + " adoptados"); await decir("Muy bien. Cuando quieras, tocá Seguir."); }
+      } }, REFUGIO));
+      decir(`Hola, ${ALUMNO}. Soy Numi. En el refugio hay doce perritos. Tocá uno y se va a su casa nueva: lo adoptaron.`);
+    } },
+  { id:"mate-explicar", nombre:"Matemática · Explicar", tono:"mate", nodo:"mate", fase:"Explicar", quien:"mate",
+    async entrar(){
+      const eq = Equipo(tarjeta(), Object.assign({ quieto:true }, REFUGIO));
+      await espera(500);
+      const p = decir("Mirá. Reparto los doce en cuatro grupos de tres. Si adoptan dos grupos, adoptaron dos cuartos: seis perritos. Ahora los reparto en dos grupos de seis: uno es la mitad. Dos cuartos y un medio son lo mismo: seis perritos.");
+      await espera(1400); eq.set([], 4);
+      await espera(3200); eq.set([7, 8, 9, 10, 11, 12], 4);
+      await espera(4600); eq.set([7, 8, 9, 10, 11, 12], 2);
+      await p; principal("Seguir", siguiente);
+    } },
+  { id:"mate-descubrir", nombre:"Matemática · Descubrir", tono:"mate", nodo:"mate", fase:"Descubrir", quien:"mate", ayuda:true,
+    pista:"Un cuarto son tres perritos. ¿Cuántos son tres cuartos?",
+    async demo(){
+      const eq = this._eq; eq.bloquear(); principal(null);
+      const p = decir("Mirá cómo lo hago con dos tercios: armo tres grupos de cuatro y mando dos grupos a su casa. Ahora probá vos con tres cuartos.");
+      eq.set([], 3); await espera(2400); eq.set([5, 6, 7, 8, 9, 10, 11, 12], 3);
+      await p; await espera(600); eq.set([], 0); eq.bloquear(false); this.listo();
+    },
+    listo(){
+      principal("Listo", async () => {
+        const n = this._eq.st.fuera.size, mt = metricas(); mt.intentos++;
+        if (n === 9){ this._eq.bloquear(); return acertar(this, "¡Eso! Adoptaron nueve de doce: tres cuartos del refugio."); }
+        await errar(this, n + " adoptados");
+      });
+    },
+    entrar(){
+      this._eq = Equipo(tarjeta(), Object.assign({ alCambiar: quitarDev }, REFUGIO));
+      decir("Esta semana adoptaron tres cuartos de los perritos del refugio. Mandá a su casa a los que adoptaron y tocá Listo.");
+      this.listo();
+    } },
+  { id:"mate-mostrame", nombre:"Matemática · Mostrame", tono:"mate", nodo:"mate", fase:"Mostrame", quien:"mate", ayuda:true,
+    pista:"Calculá cada día por separado: ¿cuánto es un tercio de doce? ¿Y un cuarto?",
+    demoTexto:"Mirá: para dos tercios reparto en tres grupos de cuatro y tomo dos, ocho. Para tres cuartos, cuatro grupos de tres y tomo tres. Fijate cuál da más.",
+    entrar(){
+      this._w = DosDias(tarjeta(), quitarDev, { dias:[ { id:"lunes", t:"Lunes", f:"adoptaron 2/3" }, { id:"martes", t:"Martes", f:"adoptaron 3/4" } ], icono:perritoSVG, verbo:"adoptaron", boton:"Adoptaron más" });
+      decir("El lunes adoptaron dos tercios de un refugio de doce. El martes, tres cuartos de otro refugio de doce. Armá los dos días y tocá el día en que adoptaron más.");
+      principal("Listo", async () => {
+        const r = this._w.get(), mt = metricas(); mt.intentos++;
+        if (r.lunes !== 8) return errar(this, "lunes " + r.lunes);
+        if (r.martes !== 9) return errar(this, "martes " + r.martes);
+        if (r.elegido !== "martes") return errar(this, "eligió " + r.elegido);
+        this._w.bloquear(); await acertar(this, "¡Exacto! Dos tercios son ocho y tres cuartos son nueve. Tres cuartos es un poquito más.");
+      });
+    } }
+] };
+
+LECCIONES.gastroB = { nodo:"gastro", cierre:{ tipo:"gusto" }, momentos: () => [
+  { id:"gastro-explorar", nombre:"Gastronomía · Explorar", tono:"gastro", nodo:"gastro", fase:"Explorar", quien:"gastro",
+    entrar(){
+      const vistos = new Set();
+      tarjeta().innerHTML = `<div class="opciones" role="group" aria-label="Ingredientes">${INGREDIENTES.map(i => `<button class="opcion" data-i="${i.id}"><svg viewBox="0 0 64 64" aria-hidden="true">${i.svg}</svg>${i.t}</button>`).join("")}</div>`;
+      tarjeta().onclick = async ev => {
+        const b = ev.target.closest("[data-i]"); if (!b) return;
+        tarjeta().querySelectorAll("[data-i]").forEach(x => x.classList.toggle("elegida", x === b));
+        marcarToque(); vistos.add(b.dataset.i); registrar("exploró un ingrediente", b.dataset.i);
+        await decir(INGREDIENTES.find(i => i.id === b.dataset.i).dice);
+        if (vistos.size === 3) principal("Seguir", siguiente);
+      };
+      decir(`Hola, ${ALUMNO}. Soy Rolo. Hoy hacemos panqueques. Tocá cada ingrediente para saber qué hace en la receta.`);
+    } },
+  { id:"gastro-explicar", nombre:"Gastronomía · Explicar", tono:"gastro", nodo:"gastro", fase:"Explicar", quien:"gastro",
+    async entrar(){
+      tarjeta().innerHTML = `<ul class="pasos" id="pasos"></ul>`;
+      const p = decir("En una receta, el orden importa. Hay pasos que necesitan que otro ya haya pasado: no puedo dar vuelta el panqueque si todavía no está en la sartén. Pero otros pueden pasar al mismo tiempo: mientras la mezcla descansa, caliento la sartén.");
+      const items = [["Mezclar", ""], ["Dejar descansar", "mientras tanto"], ["Calentar la sartén", "al mismo tiempo"], ["Dar vuelta", ""]];
+      for (const [t, n] of items){ await espera(1500); $("#pasos").insertAdjacentHTML("beforeend", `<li>${t}${n ? `<small>${n}</small>` : ""}</li>`); }
+      await p; principal("Seguir", siguiente);
+    } },
+  { id:"gastro-descubrir", nombre:"Gastronomía · Descubrir", tono:"gastro", nodo:"gastro", fase:"Descubrir", quien:"gastro", ayuda:true,
+    pista:"Buscá qué paso necesita que otro ya haya pasado. Lo último es dar vuelta el panqueque.",
+    async demo(){
+      this._w.bloquear(); principal(null);
+      const p = decir("Mirá cómo lo pienso: primero se mezcla, después va la leche y la mezcla descansa. La sartén se calienta en cualquier momento antes de cocinar. Y al final, dar vuelta. Ahora probá vos.");
+      await espera(1200); this._w.set({ asig:{ p1:"mezclar", p2:"leche", p3:"reposar", p4:"calentar", p5:"vuelta" } });
+      await p; await espera(500); this.montar();
+    },
+    montar(){
+      tarjeta().innerHTML = "";
+      this._w = wColocar({ layout:"orden", titulo:"Panqueques", cartas:PASOS, slots:PASOS.map((_, k) => ({ id:"p" + (k + 1), label:String(k + 1), vacio:"Soltá un paso" })) }, { cambio: () => { marcarToque(); quitarDev(); } });
+      this._w.mount(tarjeta());
+      principal("Listo", async () => {
+        const o = ordenDe(this._w, 5), mt = metricas(); mt.intentos++;
+        if (!o.every(Boolean)) return errar(this, "faltan pasos");
+        const r = rota(o, REGLAS_PANQUEQUE); if (r){ registrar("orden", POR_QUE_PASO[r.join(",")]); return errar(this, r.join(" antes que ")); }
+        this._w.bloquear(); await acertar(this, "¡Receta en orden! Y la sartén la podés calentar en cualquier momento antes de cocinar.");
+      });
+    },
+    entrar(){ this.montar(); decir("Ordená los pasos de los panqueques. Ojo: hay más de un orden que funciona."); } },
+  { id:"gastro-mostrame", nombre:"Gastronomía · Mostrame", tono:"gastro", nodo:"gastro", fase:"Mostrame", quien:"gastro", ayuda:true,
+    pista:"Fijate en qué momento el molde ya tiene algo adentro.",
+    demoTexto:"Mirá: el molde tiene que estar lleno antes de ir al horno. Buscá el paso que lo manda vacío. Ahora probá vos.",
+    entrar(){
+      tarjeta().innerHTML = `<p class="receta-tit">Budín de vainilla</p><ol class="lista-pasos">${BUDIN.map((t, k) => `<li><button data-b="${k}">${t}</button></li>`).join("")}</ol>`;
+      let listo = false;
+      tarjeta().onclick = async ev => {
+        const b = ev.target.closest("[data-b]"); if (!b || listo) return;
+        marcarToque(); quitarDev(); const mt = metricas(); mt.intentos++;
+        tarjeta().querySelectorAll("[data-b]").forEach(x => x.classList.remove("sel"));
+        if (b.dataset.b === "3"){ listo = true; b.classList.add("bien"); return acertar(this, "¡Lo encontraste! El molde va al horno al final, cuando ya tiene la mezcla."); }
+        b.classList.add("sel"); await errar(this, "paso " + (Number(b.dataset.b) + 1));
+      };
+      decir("Esta receta de budín tiene un paso fuera de lugar. Tocá el paso que está mal.");
+    } }
+] };
+
+LECCIONES.cienciasB = { nodo:"ciencias", cierre:{ tipo:"gusto" }, momentos: () => [
+  { id:"ciencias-explorar", nombre:"Ciencias · Explorar", tono:"ciencias", nodo:"ciencias", fase:"Explorar", quien:"ciencias",
+    entrar(){
+      let corridas = 0;
+      const w = wSim({ textos:TXT_TOMATE }, { cambio: async ev => {
+        marcarToque(); if (ev.tipo !== "dias") return;
+        corridas++; registrar("probó en el simulador", ev.resultado);
+        await decir(RES_TOMATE[ev.resultado]);
+        if (corridas === 2) principal("Seguir", siguiente);
+      } });
+      w.mount(caja());
+      decir(`Hola, ${ALUMNO}. Soy Fini. Estos son los plantines de tomate de la huerta. Podés cambiar si les da el sol, si los riegan y si les llega aire. Después adelantá cinco días.`);
+    } },
+  { id:"ciencias-explicar", nombre:"Ciencias · Explicar", tono:"ciencias", nodo:"ciencias", fase:"Explicar", quien:"ciencias",
+    async entrar(){
+      const w = wSim({ textos:TXT_TOMATE }, { cambio: () => {} }); w.mount(caja()); w.bloquear();
+      const p = decir("Para saber qué necesita una planta, se cambia una sola cosa por vez y todo lo demás queda igual. Mirá: apago solo el riego. Si se seca, ya sé que fue por el agua. Si hubiera cambiado dos cosas, no sabría cuál fue.");
+      await espera(2600); w.set({ agua:false }, true);
+      await p; principal("Seguir", siguiente);
+    } },
+  { id:"ciencias-descubrir", nombre:"Ciencias · Descubrir", tono:"ciencias", nodo:"ciencias", fase:"Descubrir", quien:"ciencias", ayuda:true,
+    pista:"Dejá todo como está y cambiá una sola cosa: la que querés averiguar.",
+    async demo(){
+      const c = this._caja; c.innerHTML = "";
+      const w = wSim({ textos:TXT_TOMATE }, { cambio: () => {} }); w.mount(c); w.bloquear();
+      const p = decir("Mirá cómo pruebo si necesita sol: dejo el riego y el aire, y apago solo el sol. Ahora probá vos con el aire.");
+      await espera(1800); w.set({ luz:false }, true);
+      await p; await espera(500); this.montar();
+    },
+    montar(){
+      this._caja.innerHTML = "";
+      this._w = wSim({ textos:TXT_TOMATE }, { cambio: async ev => {
+        marcarToque(); quitarDev(); if (ev.tipo !== "dias") return;
+        const w = this._w.get(), mt = metricas(); mt.intentos++;
+        const cambiadas = [!w.luz, !w.agua, !w.aire].filter(Boolean).length;
+        if (!w.aire && cambiadas === 1){ this._w.bloquear(); return acertar(this, "¡Experimento justo! Cambiaste solo el aire y el plantín se marchitó: necesita aire."); }
+        return errar(this, cambiadas > 1 ? "cambió más de una cosa" : "cambió otra cosa");
+      } });
+      this._w.mount(this._caja);
+    },
+    entrar(){ this._caja = caja(); this.montar(); decir("Quiero saber si el tomate necesita aire. Prepará el experimento en el simulador y adelantá los días."); } },
+  { id:"ciencias-mostrame", nombre:"Ciencias · Mostrame", tono:"ciencias", nodo:"ciencias", fase:"Mostrame", quien:"ciencias", ayuda:true,
+    pista:"Las dos macetas tienen que ser iguales en todo, menos en el riego.",
+    demoTexto:"Mirá cada opción y contá cuántas cosas cambian entre las dos macetas. Tiene que cambiar una sola: el riego.",
+    entrar(){
+      let paso = 1;
+      const pintar = () => {
+        tarjeta().innerHTML = paso === 1
+          ? `<p class="pregunta chica">¿Qué experimento sirve para saber si el tomate necesita riego?</p><div class="experimentos">${EXPERIMENTOS.map(e => `<button class="exp" data-x="${e.id}">${maceta(1, e.m1)}${maceta(2, e.m2)}</button>`).join("")}</div>`
+          : `<p class="pregunta chica">¿Qué le va a pasar a la maceta 2?</p><div class="experimentos">${[["seca", "Se va a secar"], ["amarilla", "Se va a poner amarilla"], ["igual", "Va a crecer igual"]].map(([id, t]) => `<button class="exp corta" data-y="${id}">${t}</button>`).join("")}</div>`;
+        escalonar();
+      };
+      tarjeta().onclick = async ev => {
+        const x = ev.target.closest("[data-x],[data-y]"); if (!x) return;
+        marcarToque(); quitarDev(); const mt = metricas(); mt.intentos++;
+        if (x.dataset.x){
+          if (x.dataset.x === "b"){ x.classList.add("bien"); registrar("eligió el experimento justo"); await decir("¡Ese! Solo cambia el riego.", { estado:"festeja" }); paso = 2; pintar(); decir("Y ahora, ¿qué le va a pasar a la maceta dos?"); return; }
+          x.classList.add("sel"); return errar(this, "experimento " + x.dataset.x);
+        }
+        if (x.dataset.y === "seca"){ x.classList.add("bien"); return acertar(this, "¡Exacto! Sin riego se seca. Así sabemos que el tomate necesita agua."); }
+        x.classList.add("sel"); return errar(this, "predijo " + x.dataset.y);
+      };
+      pintar();
+      decir("Para saber si el tomate necesita riego, ¿qué experimento sirve? Tocá el que es justo.");
+    } }
+] };
+
+LECCIONES.huertaJ = { nodo:"huerta", duo:["mate", "ciencias"], cierre:{ tipo:"explicar", pregunta:"¿Podrías explicarle a Sofía cómo repartiste la huerta?" }, momentos: () => [
+  { id:"huerta-explorar", nombre:"Huerta · Explorar", tono:"huerta", nodo:"huerta", fase:"Explorar", quien:"ciencias", duo:["mate", "ciencias"],
+    async entrar(){
+      Huerta(tarjeta(), async () => { if (S.toques === 4){ principal("Seguir", siguiente); await decir("Muy bien. Cuando quieras, tocá Seguir.", { quien:"mate" }); } });
+      await decir(`Hola, ${ALUMNO}. Soy Fini y hoy damos la clase con Numi. Esta es la huerta del cole: doce lugares para plantar.`, { quien:"ciencias" });
+      await decir("Tocá un lugar para plantar, y tocalo otra vez para cambiar la planta.", { quien:"mate" });
+    } },
+  { id:"huerta-explicar", nombre:"Huerta · Explicar", tono:"huerta", nodo:"huerta", fase:"Explicar", quien:"mate", duo:["mate", "ciencias"],
+    async entrar(){
+      const h = Huerta(tarjeta()); h.bloquear();
+      const p = decir("Si un tercio de la huerta es de tomates, reparto los doce lugares en tres grupos: cuatro tomates. Si un cuarto es de lechugas, reparto en cuatro grupos: tres lechugas.", { quien:"mate" });
+      await espera(2600); h.set(llenar(4, 0, 0)); await espera(4200); h.set(llenar(4, 3, 0));
+      await p;
+      const q = decir("Y los lugares que quedan son para la albahaca, que cuida a los tomates de los bichos.", { quien:"ciencias" });
+      await espera(1200); h.set(llenar(4, 3, 5)); await q;
+      principal("Seguir", siguiente);
+    } },
+  { id:"huerta-descubrir", nombre:"Huerta · Descubrir", tono:"huerta", nodo:"huerta", fase:"Descubrir", quien:"mate", duo:["mate", "ciencias"], ayuda:true,
+    pista:"Empezá por los tomates: un tercio de doce. Después, las lechugas: un cuarto de doce.",
+    async demo(){
+      this._h.bloquear(); principal(null);
+      const p = decir("Mirá cómo lo hago con la mitad: la mitad de doce son seis, así que planto seis tomates. Ahora probá vos con lo que te pedí.", { quien:"mate" });
+      await espera(2400); this._h.set(llenar(6, 0, 0));
+      await p; await espera(600); this._h.set(llenar(0, 0, 0)); this._h.bloquear(false); this.listo();
+    },
+    listo(){
+      principal("Listo", async () => {
+        const c = this._h.cuenta(), mt = metricas(); mt.intentos++;
+        if (c.tomate !== 4) return errar(this, c.tomate + " tomates");
+        if (c.lechuga !== 3) return errar(this, c.lechuga + " lechugas");
+        if (c.albahaca !== 5) return errar(this, c.albahaca + " albahacas");
+        this._h.bloquear(); await acertar(this, "¡Huerta lista! Cuatro tomates, tres lechugas y cinco plantas de albahaca.");
+      });
+    },
+    entrar(){
+      this._h = Huerta(tarjeta(), quitarDev);
+      decir("Plantá un tercio de tomates, un cuarto de lechugas y el resto de albahaca. Después tocá Listo.", { quien:"mate" });
+      this.listo();
+    } },
+  { id:"huerta-mostrame", nombre:"Huerta · Mostrame", tono:"huerta", nodo:"huerta", fase:"Mostrame", quien:"mate", duo:["mate", "ciencias"], ayuda:true,
+    pista:"Contá de a cinco: cinco, diez, quince… ¿ya llegás a dieciocho?",
+    demoTexto:"Mirá: con una tomatera tengo cinco, con dos, diez. Seguí sumando de a cinco hasta pasar los dieciocho.",
+    async entrar(){
+      tarjeta().innerHTML = `<div class="tomateras" id="tom"></div><div id="cnt"></div>`;
+      const pintar = n => { $("#tom").innerHTML = Array.from({ length:n }, () => tomateraSVG).join(""); };
+      const c = Contador($("#cnt"), { valor:1, min:1, max:8, etiqueta:"Tomateras" }, n => { quitarDev(); pintar(n); });
+      pintar(1);
+      principal("Listo", async () => {
+        const n = c.get(), mt = metricas(); mt.intentos++;
+        if (n === 4){ c.bloquear(); return acertar(this, "¡Exacto! Con tres tomateras hay quince tomates: no alcanza. Con cuatro hay veinte, y sobran dos."); }
+        return errar(this, n + " tomateras");
+      });
+      await decir("Cada tomatera da cinco tomates. Para la salsa del recetario hacen falta dieciocho.", { quien:"ciencias" });
+      await decir("¿Cuántas tomateras hay que plantar, como mínimo?", { quien:"mate" });
+    } }
+] };
+
+LECCIONES.huertaS = { nodo:"huerta", duo:["ciencias", "dibujo"], cierre:{ tipo:"explicar", pregunta:"¿Podrías explicarle a Joaquín cómo se dibuja una planta?" }, momentos: () => [
+  { id:"huerta-explorar", nombre:"Huerta · Explorar", tono:"huerta", nodo:"huerta", fase:"Explorar", quien:"ciencias", duo:["ciencias", "dibujo"],
+    async entrar(){
+      const vistas = new Set();
+      tarjeta().innerHTML = `<div class="vista tocable">${plantaSVG(ORDEN_PLANTA)}</div>`;
+      tarjeta().onclick = async ev => {
+        const g = ev.target.closest("[data-p]"); if (!g) return;
+        tarjeta().querySelectorAll("[data-p]").forEach(x => x.classList.toggle("brilla", x === g));
+        marcarToque(); vistas.add(g.dataset.p); registrar("tocó una parte de la planta", g.dataset.p);
+        await decir(PLANTA[g.dataset.p].dice, { quien:"ciencias" });
+        if (vistas.size === 4) principal("Seguir", siguiente);
+      };
+      await decir(`Hola, ${ALUMNO}. Soy Fini y hoy damos la clase con Dona. Esta es una planta de tomate de la huerta.`, { quien:"ciencias" });
+      await decir("Tocá sus partes para conocerlas. Después te enseño a dibujarla.", { quien:"dibujo" });
+    } },
+  { id:"huerta-explicar", nombre:"Huerta · Explicar", tono:"huerta", nodo:"huerta", fase:"Explicar", quien:"dibujo", duo:["ciencias", "dibujo"],
+    async entrar(){
+      tarjeta().innerHTML = `<div class="vista" id="vPl">${plantaSVG([])}</div>`;
+      const p = decir("Para dibujar una planta empiezo por la tierra. Abajo, la raíz: líneas que se abren como ramitas. Después el tallo, una línea que sube. Las hojas son óvalos con punta. Al costado, el fruto: un círculo. Y arriba, la flor: círculos alrededor de un centro.", { quien:"dibujo" });
+      const pasos = ["raiz", "tallo", "hoja", "fruto", "flor"], hechas = [];
+      for (const id of pasos){ await espera(id === "raiz" ? 2400 : 2300); hechas.push(id); $("#vPl").innerHTML = plantaSVG(hechas); }
+      await p; principal("Seguir", siguiente);
+    } },
+  { id:"huerta-descubrir", nombre:"Huerta · Descubrir", tono:"huerta", nodo:"huerta", fase:"Descubrir", quien:"ciencias", duo:["ciencias", "dibujo"], ayuda:true,
+    pista:"Pensá el camino del agua: entra por abajo y va subiendo.",
+    demoTexto:"Mirá: la raíz está en la tierra, así que es la que toma el agua. El tallo es el caño que la sube. Seguí así con las demás.",
+    entrar(){
+      const PARTES = [["raiz", "Toma el agua de la tierra"], ["tallo", "Lleva el agua hacia arriba"], ["hoja", "Fabrica el alimento con la luz"], ["flor", "Se convierte en fruto"], ["fruto", "Guarda las semillas"]];
+      this._w = wColocar({ layout:"parches", cartas: ORDEN_PLANTA.map(id => ({ id, t:PLANTA[id].t })).sort((a, b) => a.t.localeCompare(b.t)), slots: PARTES.map(([id, t]) => ({ id, label:t, vacio:"Soltá una parte" })) }, { cambio: () => { marcarToque(); quitarDev(); } });
+      this._w.mount(tarjeta());
+      decir("Cada parte tiene un trabajo. Arrastrá cada parte al trabajo que hace y tocá Listo.", { quien:"ciencias" });
+      principal("Listo", async () => {
+        const { asig } = this._w.get(), mt = metricas(); mt.intentos++;
+        const mal = PARTES.filter(([id]) => asig[id] !== id).length;
+        if (mal) return errar(this, mal + " mal ubicadas");
+        this._w.bloquear(); await acertar(this, "¡Todas en su lugar! Ya sabés qué hace cada parte.");
+      });
+    } },
+  { id:"huerta-mostrame", nombre:"Huerta · Mostrame", tono:"huerta", nodo:"huerta", fase:"Mostrame", quien:"dibujo", duo:["ciencias", "dibujo"], ayuda:true,
+    pista:"Contá las partes: raíz, tallo, hojas, fruto y flor. ¿Están todas?",
+    demoTexto:"Mirá: empezá por la raíz debajo de la tierra, subí con el tallo y después agregá hojas, el fruto y la flor. Una parte por vez.",
+    entrar(){
+      const box = caja(), l = Lienzo(box);
+      decir("Ahora dibujá vos una planta de tomate con sus cinco partes, de abajo hacia arriba. Cuando termines, tocá Listo.", { quien:"dibujo" });
+      principal("Listo", async () => {
+        const mt = metricas(); mt.intentos++;
+        if (l.trazos() < 5) return errar(this, l.trazos() + " trazos");
+        registrar("dibujó una planta", l.trazos() + " trazos");
+        await acertar(this, "¡Qué buena planta! Se ven todas sus partes. Va directo al recetario.");
+      });
+    } }
+] };
+
+LECCIONES.huertaB = { nodo:"huerta", duo:["gastro", "mate"], cierre:{ tipo:"explicar", pregunta:"¿Podrías explicarle a Sofía cómo agrandaste la receta?" }, momentos: () => [
+  { id:"huerta-explorar", nombre:"Huerta · Explorar", tono:"huerta", nodo:"huerta", fase:"Explorar", quien:"gastro", duo:["gastro", "mate"],
+    async entrar(){
+      let pila = 12; const platos = [0, 0, 0, 0];
+      const pintar = () => {
+        tarjeta().innerHTML = `<div class="reparto"><div class="pila"><div class="pila-p">${Array.from({ length:pila }, () => panquequeSVG).join("")}</div><small>Quedan ${pila}</small></div><div class="platos">${platos.map((n, k) => `<button class="plato" data-pl="${k}" aria-label="Plato ${k + 1}: ${n}"><div class="pila-p">${Array.from({ length:n }, () => panquequeSVG).join("")}</div><span>${n}</span></button>`).join("")}</div></div>`;
+      };
+      tarjeta().onclick = async ev => {
+        const b = ev.target.closest("[data-pl]"); if (!b || !pila) return;
+        platos[Number(b.dataset.pl)]++; pila--; marcarToque(); pintar();
+        if (!pila){
+          const justo = platos.every(n => n === 3); registrar("repartió panqueques", platos.join("-"));
+          await decir(justo ? "¡Tres para cada uno! Doce repartido en cuatro es tres." : "Mirá: no quedaron iguales. Para que sea justo, cada plato tendría que tener tres.", { quien:"mate", estado: justo ? "festeja" : "habla" });
+          principal("Seguir", siguiente);
+        }
+      };
+      pintar();
+      await decir(`Hola, ${ALUMNO}. Soy Rolo y hoy damos la clase con Numi. Hicimos doce panqueques.`, { quien:"gastro" });
+      await decir("Repartilos entre los cuatro platos: tocá un plato para servirle uno.", { quien:"mate" });
+    } },
+  { id:"huerta-explicar", nombre:"Huerta · Explicar", tono:"huerta", nodo:"huerta", fase:"Explicar", quien:"mate", duo:["gastro", "mate"],
+    async entrar(){
+      tarjeta().innerHTML = `<div class="receta"><div class="rfila rcab"><span></span><span>Para 4</span><span>Para 8</span></div>${RECETA.map(r => `<div class="rfila"><span class="rnomb">${r.t}</span><span class="rbase">${r.fmt(r.base)}${r.cuartos ? `<i>${taza(r.base)}</i>` : ""}</span><span class="rnuevo" data-r="${r.id}"></span></div>`).join("")}</div>`;
+      await decir("Mi receta de panqueques es para cuatro personas.", { quien:"gastro" });
+      const p = decir("Si son ocho, son el doble: multiplico cada cosa por dos. Dos huevos por dos, cuatro. Una taza de leche por dos, dos tazas. Tres cuartos de harina por dos son seis cuartos: una taza y media.", { quien:"mate" });
+      for (const r of RECETA){ await espera(r.id === "huevos" ? 2600 : 2800); const v = r.base * 2; tarjeta().querySelector(`[data-r="${r.id}"]`).innerHTML = `<b class="aparece-v">${r.fmt(v)}</b>${r.cuartos ? `<i>${taza(v)}</i>` : ""}`; }
+      await p; principal("Seguir", siguiente);
+    } },
+  { id:"huerta-descubrir", nombre:"Huerta · Descubrir", tono:"huerta", nodo:"huerta", fase:"Descubrir", quien:"mate", duo:["gastro", "mate"], ayuda:true,
+    pista:"Para doce personas, cada ingrediente va tres veces. Tres cuartos, tres veces, son nueve cuartos.",
+    demoTexto:"Mirá con la leche: para cuatro es una taza. Para doce, una taza tres veces: tres tazas. Hacé lo mismo con los huevos y la harina.",
+    entrar(){
+      this._e = Escalar(caja(), 12, quitarDev);
+      decir("Para el recetario cocinamos para doce. Cambiá las cantidades de la columna de la derecha y tocá Listo.", { quien:"mate" });
+      principal("Listo", async () => {
+        const v = this._e.get(), mt = metricas(); mt.intentos++;
+        if (v.huevos !== 6) return errar(this, v.huevos + " huevos");
+        if (v.leche !== 12) return errar(this, "leche " + cuartos(v.leche));
+        if (v.harina !== 9) return errar(this, "harina " + cuartos(v.harina));
+        this._e.bloquear(); await acertar(this, "¡Receta para doce! Seis huevos, tres tazas de leche y dos tazas y un cuarto de harina.");
+      });
+    } },
+  { id:"huerta-mostrame", nombre:"Huerta · Mostrame", tono:"huerta", nodo:"huerta", fase:"Mostrame", quien:"gastro", duo:["gastro", "mate"], ayuda:true,
+    pista:"Primero calculá cuántos panqueques hacen falta para todos. Después restá los que ya tenés.",
+    demoTexto:"Mirá: si diez chicos comen dos cada uno, hacen falta veinte. Si tengo dieciséis, faltan cuatro. Hacelo con los números de Rolo.",
+    async entrar(){
+      tarjeta().innerHTML = `<div class="problema"><p><b>24</b> panqueques salen con la receta para 12</p><p><b>15</b> chicos vienen al almuerzo</p><p><b>2</b> panqueques come cada uno</p></div><div id="cnt"></div>`;
+      const c = Contador($("#cnt"), { valor:0, min:0, max:30, etiqueta:"Faltan" }, quitarDev);
+      principal("Listo", async () => {
+        const n = c.get(), mt = metricas(); mt.intentos++;
+        if (n === 6){ c.bloquear(); return acertar(this, "¡Exacto! Quince chicos por dos son treinta panqueques. Tenemos veinticuatro: faltan seis.", { quien:"gastro" }); }
+        return errar(this, "dijo " + n);
+      });
+      await decir("Con la receta para doce salen veinticuatro panqueques. Al almuerzo vienen quince chicos y cada uno come dos.", { quien:"gastro" });
+      await decir("¿Cuántos panqueques faltan?", { quien:"mate" });
+    } }
+] };
+
+/* Cierre de cada clase: en vez de mostrarle resultados, Guio le hace una pregunta metacognitiva.
+   La respuesta se registra y se usa en "Lo que cambió hoy". */
+const CIERRES = {
+  dificil: { pregunta:"¿Qué tan difícil te pareció esta clase?", opciones:["Muy fácil", "Fácil", "Más o menos", "Difícil", "Muy difícil"],
+    responde: v => v <= 2 ? ["Qué bueno que te resultó fácil.", "festeja"] : v === 3 ? ["Gracias por contarme.", "reposo"] : ["Gracias por contarme. Lo tengo en cuenta para mañana.", "anima"] },
+  gusto: { pregunta:"¿Cuánto te gustó esta clase?", opciones:["Nada", "Poco", "Más o menos", "Bastante", "Mucho"],
+    responde: v => v >= 4 ? ["¡Qué bueno que te gustó!", "festeja"] : v === 3 ? ["Gracias por contarme.", "reposo"] : ["Gracias por decírmelo. Voy a buscar otra manera.", "anima"] },
+  explicar: { opciones:["Nada seguro", "Poco seguro", "Más o menos", "Bastante seguro", "Muy seguro"],
+    responde: v => v >= 4 ? ["Genial. Mañana vas a tener la oportunidad.", "festeja"] : v === 3 ? ["Está bien. Lo vamos a repasar un poco.", "reposo"] : ["Gracias por contarme. Lo repasamos juntos.", "anima"] }
+};
+// Quién da cada clase, para los pases de una a otra.
+const profesDe = id => { if (id === "huerta"){ const l = P.lecciones.map(k => LECCIONES[k]).find(l => l.nodo === "huerta"); return l.duo; } return [id]; };
+function pase(nodo){
+  const k = DIA.findIndex(d => d.id === nodo), sig = DIA[k + 1];
+  if (!sig) return "";
+  if (sig.id === "recreo") return "Ahora, recreo.";
+  const ps = profesDe(sig.id).map(q => PERSONAS[q].nombre);
+  return sig.id === "huerta" ? `Ahora viene la clase de la huerta, con ${ps.join(" y ")}.` : `Ahora te dejo con ${ps[0]}, tu profe de ${PERSONAS[sig.id].materia}.`;
+}
+function cierre(nodo, cfg){
+  const c = Object.assign({}, CIERRES[cfg.tipo], cfg), materia = DIA.find(d => d.id === nodo).nombre;
+  return { id:nodo + "-cierre", nombre:`Cierre de ${materia}: pregunta`, tono:nodo, nodo, quien:"miseno",
+    entrar(){
+      completarNodo(nodo);
+      tarjeta().innerHTML = `<p class="pregunta">${esc(c.pregunta)}</p>
+        <div class="escala" role="group" aria-label="${esc(c.pregunta)}">${c.opciones.map((o, k) => `<button class="paso" data-v="${k + 1}" style="--h:${18 + k * 13}px"><span class="barra" aria-hidden="true"></span>${esc(o)}</button>`).join("")}</div>`;
+      decir(c.pregunta);
+      tarjeta().onclick = async ev => {
+        const b = ev.target.closest("[data-v]"); if (!b || S.meta[nodo]) return;
+        const v = Number(b.dataset.v); S.meta[nodo] = { valor:v, texto:c.opciones[v - 1] };
+        tarjeta().querySelectorAll("[data-v]").forEach(x => { x.disabled = true; x.classList.add(x === b ? "elegida" : "apagada"); });
+        registrar(`respondió: ${c.pregunta}`, c.opciones[v - 1]);
+        const [r, estado] = c.responde(v);
+        await decir((r + " " + pase(nodo)).trim(), { estado });
+        principal("Seguir", siguiente);
+      };
+    } };
+}
+function completarNodo(id){ if (!S.hechos.includes(id)) S.hechos.push(id); pintarDia(); }
+const lista = xs => xs.length > 1 ? xs.slice(0, -1).join(", ") + " y " + xs[xs.length - 1] : xs[0];
+const oa = () => P.nombre === "Sofía" ? "a" : "o";
+
+/* ===================== MOMENTOS COMUNES ===================== */
+const COMUNES = {
+  saludo: { id:"saludo", nombre:"Saludo", tono:"miseno", quien:"miseno",
+    async entrar(){
+      tarjeta().innerHTML = `<p class="grande">Hola, ${ALUMNO}</p>`;
+      registrar("llegada", new Date().toTimeString().slice(0, 5));
+      await espera(600);
+      await decir(`Hola, ${ALUMNO}. Soy Guio, tu tutor. Espero que hayas amanecido bien.`);
+      await espera(300); siguiente();
+    } },
+  animo: { id:"animo", nombre:"¿Cómo estás?", tono:"miseno", quien:"miseno",
+    entrar(){
+      tarjeta().innerHTML = `<div class="opciones" role="group" aria-label="Cómo te sentís">${ANIMOS.map(a => `<button class="opcion" data-a="${a.id}"><svg viewBox="0 0 64 64" aria-hidden="true">${CARAS[a.id]}</svg>${a.id === "contento" && oa() === "a" ? "Contenta" : a.id === "cansado" && oa() === "a" ? "Cansada" : a.id === "nervioso" && oa() === "a" ? "Nerviosa" : a.id === "tranquilo" && oa() === "a" ? "Tranquila" : a.t}</button>`).join("")}</div>`;
+      decir("¿Cómo te sentís hoy?");
+      tarjeta().onclick = async ev => {
+        const b = ev.target.closest("[data-a]"); if (!b || S.animo) return;
+        S.animo = b.dataset.a; b.classList.add("elegida"); registrar("dijo que se siente", S.animo);
+        tarjeta().onclick = null;
+        await decir("Gracias por contarme."); siguiente();
+      };
+    } },
+  sensores: { id:"sensores", nombre:"Lo que detectan los sensores", tono:"miseno", quien:"miseno",
+    async entrar(){
+      const s = P.sensor;
+      const dicho = (ANIMOS.find(a => a.id === S.animo) || ANIMOS[0]).t;
+      tarjeta().innerHTML = `<div class="lectura">
+        <div class="dato dijo"><small>Vos dijiste</small><b>${dicho}</b></div>
+        <div class="dato"><small>Tus sensores</small><b id="sAnimo">Midiendo…</b><div class="barra-sensor"><i></i></div></div>
+        <div class="dato dijo" style="visibility:hidden"></div>
+        <div class="dato"><small>Sueño</small><b id="sSueno">Midiendo…</b><div class="barra-sensor"><i></i></div></div></div>`;
+      await espera(1700);
+      $("#sAnimo").textContent = s.animo; $("#sSueno").textContent = s.sueno;
+      registrar("sensores", s.registro);
+      if ((s.malo && /contento|tranquilo/.test(S.animo)) || (!s.malo && /nervioso|cansado/.test(S.animo))) registrar("lo que dijo no coincide con los sensores");
+      await decir(s.dicho);
+      await espera(400); siguiente();
+    } },
+  tuDia: { id:"tu-dia", nombre:"Tu día", tono:"miseno", quien:"miseno",
+    async entrar(){
+      tarjeta().innerHTML = `<ul class="plan">${DIA.map((d, k) => `<li style="--c:${d.c};animation-delay:${0.3 + k * 0.45}s"><i></i><span>${d.nombre}${d.sub ? `<small> con ${d.sub}</small>` : ""}</span><time>${d.hora}</time></li>`).join("")}</ul>`;
+      const items = [...$("#dia").children]; items.forEach(li => li.classList.remove("visible"));
+      items.forEach((li, k) => setTimeout(() => li.classList.add("visible"), 300 + k * 450));
+      const nom = d => d.id === "recreo" ? "el recreo" : d.id === "huerta" ? "la clase de la huerta" : d.nombre;
+      await decir(`Así armé tu día. Primero ${nom(DIA[0])}, después ${nom(DIA[1])}, después ${nom(DIA[2])} y al final ${nom(DIA[3])}.`);
+      principal("Arrancar", async () => { principal(null); const p = PERSONAS[DIA[0].id]; await decir(`Te dejo con ${p.nombre}, tu profe de ${p.materia}.`); siguiente(); });
+    } },
+  recreo: { id:"recreo", nombre:"Recreo", tono:"recreo", nodo:"recreo", quien:"miseno",
+    async entrar(){
+      const motivo = P.recreoMotivo(P.costo()), [a, b] = P.amigos;
+      tarjeta().innerHTML = `<div class="amigos"><div class="amigo"><i>${a[0]}</i>${a}</div><div class="amigo"><i>${b[0]}</i>${b}</div></div><p class="motivo">${esc(motivo)}</p>`;
+      registrar("sugirió el recreo con", `${a} y ${b}`);
+      await decir(`Te sugiero pasar el recreo con ${a} y ${b}. ${motivo} Nos vemos en veinte minutos.`, { sub: `Te sugiero pasar el recreo con ${a} y ${b}. ${motivo}` });
       principal("Ir al recreo", async () => {
         principal(null);
         tarjeta().innerHTML = `<p class="reloj" id="reloj" aria-label="Hora">10:20</p><p class="motivo">Recreo</p>`;
         ponerSub("Recreo"); $("#repetir").hidden = true;
         for (let m = 21; m <= 40; m++){ await espera(110); $("#reloj").textContent = "10:" + m; }
         completarNodo("recreo"); registrar("volvió del recreo", "10:40");
-        await espera(500); await decir("Bienvenido de vuelta. Te dejo con Fini, tu profe de Ciencias."); siguiente();
+        await espera(500); await decir(`Bienvenid${oa()} de vuelta. ${pase("recreo")}`); siguiente();
       });
     } },
-
-  { id:"ciencias-explorar", nombre:"Ciencias · Explorar", tono:"ciencias", nodo:"ciencias", fase:"Explorar", quien:"ciencias",
-    entrar(){
-      let corridas = 0;
-      const caja = document.createElement("div"); caja.style.cssText = "width:100%;display:flex;flex-direction:column;align-items:center;gap:14px"; tarjeta().appendChild(caja);
-      const w = wSim({}, { cambio: async ev => {
-        marcarToque();
-        if (ev.tipo !== "dias") return;
-        corridas++;
-        const t = { verde:"Con sol, agua y aire, crece verde y fuerte.", amarillo:"Sin sol, se puso amarillo.", seco:"Sin agua, se secó.", marchito:"Tapado sin aire, se marchitó." }[ev.resultado];
-        registrar("probó en el simulador", ev.resultado);
-        await decir(t);
-        if (corridas === 2) principal("Seguir", siguiente);
-      } });
-      w.mount(caja);
-      decir(`Hola, ${ALUMNO}. Soy Fini. Este es el pasto de la cancha del club. Podés cambiar si le da el sol, si lo riegan y si le llega aire. Después tocá Adelantar cinco días y mirá qué pasa.`);
-    } },
-
-  { id:"ciencias-explicar", nombre:"Ciencias · Explicar", tono:"ciencias", nodo:"ciencias", fase:"Explicar", quien:"ciencias",
+  cambios: { id:"cambios", nombre:"Lo que cambió hoy", tono:"miseno", quien:"miseno",
     async entrar(){
-      const caja = document.createElement("div"); caja.style.cssText = "width:100%;display:flex;flex-direction:column;align-items:center;gap:14px"; tarjeta().appendChild(caja);
-      const w = wSim({}, { cambio: () => {} }); w.mount(caja); w.bloquear();
-      const p = decir("Mirá. Apago el sol y adelanto los días. El pasto se puso amarillo. Las hojas usan la luz para fabricar su alimento: sin luz, no pueden.");
-      await espera(1300); w.set({ luz:false }, true);
-      await p; principal("Seguir", siguiente);
-    } },
-
-  { id:"ciencias-descubrir", nombre:"Ciencias · Descubrir", tono:"ciencias", nodo:"ciencias", fase:"Descubrir", quien:"ciencias", ayuda:true,
-    pista:"Fijate qué le falta al rincón y apagá solo eso.",
-    async demo(){
-      const caja = this._caja; caja.innerHTML = "";
-      const w = wSim({}, { cambio: () => {} }); w.mount(caja); w.bloquear();
-      const p = decir("Mirá cómo armo otro caso: si no lo riegan, apago solo el riego y adelanto. Ahora probá vos con el rincón.");
-      await espera(1500); w.set({ agua:false }, true);
-      await p; await espera(500); this.montar();
-    },
-    montar(){
-      this._caja.innerHTML = "";
-      this._w = wSim({}, { cambio: async ev => {
-        marcarToque(); if (ev.tipo !== "dias") return;
-        const w = this._w.get(), mt = metricas(); mt.intentos++;
-        if (!w.luz && w.agua && w.aire){ this._w.bloquear(); return acertar(this, "¡Bien armado! Sin sol, el pasto del rincón se pone amarillo."); }
-        return errar(this, "armó " + JSON.stringify({ sol:w.luz, riego:w.agua, aire:w.aire }));
-      } });
-      this._w.mount(this._caja);
-    },
-    entrar(){
-      this._caja = document.createElement("div"); this._caja.style.cssText = "width:100%;display:flex;flex-direction:column;align-items:center;gap:14px"; tarjeta().appendChild(this._caja);
-      this.montar();
-      decir("En el rincón de la tribuna hay riego y aire, pero nunca da el sol. Armalo en el simulador y adelantá los días.");
-    } },
-
-  { id:"ciencias-mostrame", nombre:"Ciencias · Mostrame", tono:"ciencias", nodo:"ciencias", fase:"Mostrame", quien:"ciencias", ayuda:true,
-    pista:"Si el sol no llega, ¿qué otra cosa puede dar luz?",
-    demoTexto:"Mirá los botones de abajo: hay uno que da luz aunque no haya sol. Ahora probá vos.",
-    entrar(){
-      const caja = document.createElement("div"); caja.style.cssText = "width:100%;display:flex;flex-direction:column;align-items:center;gap:14px"; tarjeta().appendChild(caja);
-      const w = wSim({ fijos:{ luz:false }, lampara:true, fijoDicho:"La tribuna no se puede sacar. Buscá otra forma de darle luz." }, { cambio: async ev => {
-        marcarToque(); if (ev.tipo !== "dias") return;
-        const mt = metricas(); mt.intentos++;
-        if (ev.resultado === "verde"){ w.bloquear(); return acertar(this, "¡Verde otra vez! La lámpara le da la luz que le tapa la tribuna."); }
-        return errar(this, "quedó " + ev.resultado);
-      } });
-      w.mount(caja);
-      decir("La tribuna no se puede sacar. Hacé que el pasto del rincón vuelva a estar verde.");
-    } },
-
-  cierre("ciencias"),
-
-  { id:"cambios", nombre:"Lo que cambió hoy", tono:"miseno", quien:"miseno",
-    async entrar(){
-      const costo = costoMate();
+      const costo = P.costo(), c = P.cambios(costo);
       tarjeta().innerHTML = `<div class="cambios">
-        <section><h3>Tu camino</h3><ul>${costo
-          ? `<li>Matemática pasa al primer horario</li><li>Nuevo: repaso de tercios, mañana a las 10:40</li>`
-          : `<li>Ciencias: una clase más por semana</li><li>Nuevo: la huerta, mañana a las 11:30</li>`}
-          <li><s>Música, los viernes</s> en pausa</li></ul></section>
-        <section><h3>Tu perfil</h3><ul><li>Fracciones: ${costo ? "en progreso" : "lo resolviste bien"}</li><li>Te concentrás mejor con Sofía y Bruno</li>${S.dibujo ? "<li>Nuevo: te gusta dibujar escenas</li>" : ""}${S.meta.lengua && S.meta.lengua.valor >= 4 ? "<li>Te gustan las clases con cuentos</li>" : ""}</ul></section></div>
+        <section><h3>Tu camino</h3><ul>${c.camino.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>
+        <section><h3>Tu perfil</h3><ul>${c.perfil.map(t => `<li>${esc(t)}</li>`).join("")}${S.dibujo ? "<li>Nuevo: te gusta dibujar escenas</li>" : ""}</ul></section></div>
         <button class="porque-btn" id="porque">¿Por qué?</button><p class="respuesta" id="resp" hidden></p>`;
       registrar("cambió tu camino y tu perfil");
       $("#porque").onclick = async () => {
         registrar("preguntó por qué");
-        const m = S.met.mate, costoReal = !!m && (m.errores + m.ayudas) > 0;
-        const t = costo ? (costoReal ? "Te costó descubrir los dos tercios, así que mañana Matemática va primero." : "Me dijiste que Matemática te pareció difícil, así que mañana va primero.") : "Resolviste rápido lo del pasto, así que esta semana sumé más Ciencias.";
-        const r = $("#resp"); r.hidden = false; r.textContent = aSubtitulo(t); await decir(t);
+        const r = $("#resp"); r.hidden = false; r.textContent = aSubtitulo(c.porque); reanimar(r, "late"); await decir(c.porque);
       };
       await decir("Esto cambió hoy en tu camino.");
       principal("Seguir", siguiente);
     } },
-
-  { id:"manana", nombre:"Mañana", tono:"miseno", quien:"miseno",
+  proyecto: { id:"proyecto", nombre:"El proyecto de mañana", tono:"huerta", quien:"miseno",
     async entrar(){
-      const lista = costoMate() ? MANANA_COSTO : MANANA_FACIL;
-      tarjeta().innerHTML = `<p class="grande">Mañana</p><ol class="manana">${lista.map((d, k) => `<li style="--c:${d.c};animation-delay:${0.4 + k * 0.5}s"><i></i><span>${esc(d.n)}</span><time>${d.h}</time></li>`).join("")}</ol>`;
+      const ROLES = { "Joaquín":"Escribe las recetas", "Sofía":"Ilustra y hace las cuentas", "Bruno":"Elige qué se cocina" };
+      const chicos = [P.nombre, ...P.amigos];
+      tarjeta().innerHTML = `<p class="grande">${PROYECTO.nombre}</p><div class="grupo3">${chicos.map(n => `<div class="chico${n === P.nombre ? " yo-c" : ""}"><i>${n[0]}</i><b>${n === P.nombre ? "Vos" : n}</b><small>${ROLES[n]}</small></div>`).join("")}</div>
+        <button class="porque-btn" id="porque">¿Por qué con ellos?</button><p class="respuesta" id="resp" hidden></p>`;
+      registrar("armó el grupo del proyecto", chicos.join(", "));
+      $("#porque").onclick = async () => {
+        registrar("preguntó por qué ese grupo");
+        const t = "Los junté porque cada uno sabe algo que a los otros les cuesta. " + P.rol;
+        const r = $("#resp"); r.hidden = false; r.textContent = t; reanimar(r, "late"); await decir(t);
+      };
+      await decir(`Mañana empezás un proyecto con ${lista(P.amigos)}: ${PROYECTO.nombre.toLowerCase()}. Van a ver qué crece en la huerta, calcular cuánto hace falta, cocinar, dibujar y escribir las recetas.`);
+      principal("Seguir", siguiente);
+    } },
+  manana: { id:"manana", nombre:"Mañana", tono:"miseno", quien:"miseno",
+    async entrar(){
+      const l = P.manana(P.costo());
+      tarjeta().innerHTML = `<p class="grande">Mañana</p><ol class="manana">${l.map((d, k) => `<li style="--c:${d.c};animation-delay:${0.4 + k * 0.5}s"><i></i><span>${esc(d.n)}</span><time>${d.h}</time></li>`).join("")}</ol>`;
       registrar("armó el día de mañana");
       await decir(`Ya armé tu día de mañana. Nos vemos, ${ALUMNO}.`);
       registrar("salida", new Date().toTimeString().slice(0, 5));
     } }
-];
+};
+
+/* ===================== EL RECORRIDO DE CADA PERFIL =====================
+   saludo → ánimo → sensores → día → clase 1 → cierre → clase 2 → cierre → recreo → huerta → cierre
+   → lo que cambió → el proyecto → mañana */
+let MOMENTOS = [];
+function armar(){
+  const [l1, l2, l3] = P.lecciones.map(k => LECCIONES[k]);
+  const clase = l => [...l.momentos(), cierre(l.nodo, l.cierre)];
+  MOMENTOS = [COMUNES.saludo, COMUNES.animo, COMUNES.sensores, COMUNES.tuDia, ...clase(l1), ...clase(l2), COMUNES.recreo, ...clase(l3), COMUNES.cambios, COMUNES.proyecto, COMUNES.manana];
+}
+armar();
+
 // Botón Listo de Matemática · Descubrir (también vuelve después de la demostración).
 function listoMate(m){
   principal("Listo", async () => {
@@ -1248,7 +1936,7 @@ function pintarMeta(){ const m = M(); $("#pMeta").textContent = `Momento ${S.i +
 function pintarLog(){ const p = $("#pLog"); if (p) p.textContent = LOG.eventos.slice(-8).map(e => e.t.slice(11, 19) + " " + e.tipo + (e.que ? ": " + e.que : "") + (e.nombre ? ": " + e.nombre : "")).join("\n"); }
 function pintarPanelVoz(){
   document.querySelectorAll("[name=voz]").forEach(r => r.checked = r.value === CFG.voz);
-  document.querySelectorAll("[name=sensor]").forEach(r => r.checked = r.value === CFG.sensor);
+  document.querySelectorAll("[name=perfil]").forEach(r => r.checked = r.value === CFG.perfil);
   $("#pVoz").textContent = CFG.voz === "eleven" ? (vozError ? "Falló ElevenLabs (" + vozError + "): esa frase salió con la voz del navegador." : "La voz de ElevenLabs lee exactamente el guion. Cada frase se paga una sola vez.") : CFG.voz === "navegador" ? "Voz del navegador: no gasta créditos." : "Sin voz: los subtítulos avanzan solos.";
 }
 function abrirPanel(){ const p = $("#panel"); p.hidden = !p.hidden; if (!p.hidden){ pintarMeta(); pintarLog(); pintarPanelVoz(); $("#pNota").focus(); } }
@@ -1264,7 +1952,16 @@ $("#pGuardar").onclick = () => { const t = $("#pNota").value.trim(); if (!t) ret
 $("#pCerrar").onclick = () => { $("#panel").hidden = true; };
 $("#pCopiar").onclick = async () => { const t = JSON.stringify(LOG, null, 2); try { await navigator.clipboard.writeText(t); $("#pVoz").textContent = "Registro copiado."; } catch(e){ $("#pLog").textContent = t; } };
 document.querySelectorAll("[name=voz]").forEach(r => r.onchange = () => { CFG.voz = r.value; guardarCfg(); cortar(); pintarPanelVoz(); });
-document.querySelectorAll("[name=sensor]").forEach(r => r.onchange = () => { CFG.sensor = r.value; guardarCfg(); });
+document.querySelectorAll("[name=perfil]").forEach(r => r.onchange = () => cambiarPerfil(r.value));
+/* Cambio de perfil, escondido: tocar el avatar del chico arriba de la línea del día. */
+function cambiarPerfil(id){ if (!PERFILES[id]) return; CFG.perfil = id; guardarCfg(); try { sessionStorage.setItem("miseno-sin-apertura", "1"); } catch(e){} location.reload(); }
+function pintarYo(){
+  $("#yo").textContent = P.inicial; $("#yo").setAttribute("aria-label", `${P.nombre}. Cambiar de perfil`);
+  $("#perfiles").innerHTML = Object.entries(PERFILES).map(([id, p]) => `<button data-perfil="${id}"${p === P ? ' aria-current="true"' : ""}><i>${p.inicial}</i>${p.nombre}<small>${p.edad} años</small></button>`).join("");
+}
+$("#yo").onclick = () => { const l = $("#perfiles"); l.hidden = !l.hidden; if (!l.hidden) reanimar(l, "late"); };
+$("#perfiles").onclick = e => { const b = e.target.closest("[data-perfil]"); if (b) cambiarPerfil(b.dataset.perfil); };
+pintarYo();
 $("#repetir").onclick = repetir;
 $("#noent").onclick = () => pedirAyuda();
 document.addEventListener("keydown", e => {
@@ -1291,7 +1988,10 @@ function cerrarApertura(rapido){
   setTimeout(() => ap.remove(), 800);
 }
 $("#empezar").onclick = () => { evento("toca", { boton:"Empezar (apertura)" }); cerrarApertura(); setTimeout(() => mostrar(0), 450); };
-setTimeout(() => $("#empezar").focus({ preventScroll:true }), 1300);
+// Al cambiar de perfil no se repite la apertura: arranca el día del chico nuevo.
+let sinApertura = false; try { sinApertura = sessionStorage.getItem("miseno-sin-apertura") === "1"; sessionStorage.removeItem("miseno-sin-apertura"); } catch(e){}
+if (sinApertura){ cerrarApertura(true); evento("perfil", { perfil:P.nombre }); setTimeout(() => mostrar(0), 300); }
+setTimeout(() => { const e = $("#empezar"); if (e) e.focus({ preventScroll:true }); }, 1300);
 
 </script>
 </body>
